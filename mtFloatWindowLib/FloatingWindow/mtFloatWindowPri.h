@@ -1,1 +1,56 @@
-/*************************** UtilityŠÖ” *************************/Boolean priCanGetThisWindowFeatureRgn( WindowPtr theWindow, WindowRegionCode typeCode );	//typeCode‚ªw‚·Rgn‚ğtheWindow‚ª‚Á‚Ä‚¢‚é‚©’²‚×‚éBoolean priIsFloatOSShowFlag( WindowPtr theWindow );	//OSEvent‚É•\¦E”ñ•\¦‚Ìƒtƒ‰ƒO‚ğ•Ô‚·void priSetFloatOSShowFlag( WindowPtr theWindow, Boolean showFlag );	//OSEvent‚É•\¦E”ñ•\¦‚Ìƒtƒ‰ƒO‚ğİ’è‚·‚éBoolean priIsFloatWindow( WindowPtr theWindow );	//theWindow‚ªFloatingWindow‚©‚ğ’²‚×‚éBoolean priIsFloatWindowUseTitleBar( WindowPtr theWindow );	//theWindow‚ªFloatingWindow‚©‚ğTitleBar‚Ì•‚ğg‚Á‚Ä’²‚×‚évoid priBringFWindow( void );		//ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚ğ‘O‚É‚Á‚Ä‚­‚éBoolean priIsClickFWindow( WindowPtr window );	//FloatingWindow‚ğƒNƒŠƒbƒN‚µ‚½‚©’²‚×‚évoid priActivateCtrl( WindowPtr theWindow );	//ActivateControlˆ—void priDeactivateCtrl( WindowPtr theWindow );	//DeactivateControlˆ—Boolean priIsFWindowProcID( const short procID );	//procID‚ªFloatingWindow‚ÌprocID‚©‚ğƒ`ƒFƒbƒNmtFWDataPtr priNewFloatData( void );		//FloatingWindowData‚ğV‚µ‚­ì‚évoid priCheckWindowRect( WindowPtr theWindow, Rect maxSize );	//PortRect‚Ìƒ`ƒFƒbƒNvoid priSettingWindowData( Boolean isFloatWindow, WindowPtr theWindow );	//FloatingWindow‚ÌrefCon‚Ìİ’è//_______________________ ƒhƒ‰ƒbƒO _____________________________//void priClickFWDrag( WindowPtr window, Point mouse );	//ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚Ìƒhƒ‰ƒbƒO	void priDragDocWindow( WindowPtr window, Point mouse );		//•W€ƒEƒBƒ“ƒhƒE‚Ìƒhƒ‰ƒbƒOˆ—void priChangeDocWindow( WindowPtr window );	//•W€ƒEƒBƒ“ƒhƒE‚Ìƒhƒ‰ƒbƒOŒã‚ÌActiveEDeactiveˆ—//__________________________________________________________//void priWindowGrow( WindowPtr window, Point clickPt, GetZoomGrowSizeData zoom_growSize );	//•W€ƒEƒBƒ“ƒhƒEEƒTƒCƒYˆ—void priFWindowGrow( WindowPtr theWindow, Point clickPt );	//ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒEEƒTƒCƒYˆ—void priWindowZoom( WindowPtr theWindow, short partCode, Point clickPt );	//•W€ƒEƒBƒ“ƒhƒEEƒY[ƒ€ƒ{ƒbƒNƒXˆ—void priWindowGoAway( WindowPtr theWindow, Point clickPt, GoAwayRoutine userRoutine );	//•W€ƒEƒBƒ“ƒhƒEEgoAwayƒ{ƒbƒNƒXˆ—void priActivateWindow( Boolean isOSEvt );	//ActivateWindowˆ—iOSEventˆ—‚ğŠÜ‚Şjvoid priDeactivateWindow( Boolean isOSEvt );	//Deactivateˆ—iOSEventˆ—‚ğŠÜ‚Şj/**************************************************************///theWindow‚ÌƒXƒNƒ[ƒ‹ƒAƒNƒVƒ‡ƒ“UPPvoid priScrollWindowAction( ControlHandle theCtrl, ControlPartCode thePart );//•W€ScrollBar( ‰E•”E‰º•” )‚ÌˆÚ“®‚ÆƒTƒCƒY•ÏXvoid priStandardMoveScrlBar( WindowPtr theWindow, Rect oldPortRect );//Control‚ÌˆÊ’u‚ÆƒTƒCƒY‚ğV‚µ‚¢Rect(winRect == theWindow->PortRect)‚É‡‚í‚¹‚évoid priMoveSizeScrlBar( ControlHandle theScrl, Rect winRect, Rect oldPortRect,							short growIconSize );//•W€ScrollBar( ‰E•”E‰º•” )‚ÌControlHandle‚ğ“¾‚éControlHandle priGetStandardScrlBar( WindowPtr theWindow, Rect oldPortRect, short kind );void priSetWindowScrlUnit( ControlHandle theScrl, mtScrlUnitPtr scrlData  );	//Window‚ÌƒXƒNƒ[ƒ‹‚Ì’PˆÊ‚Æí—Ş‚Ìİ’èvoid priSetScrlBarMax( ControlHandle theScrl, mtWindowScrlUnit scrlData );	//•W€ScrollBar( ‰E•”E‰º•” )‚ÌMaxValue‚Ì•ÏX//theScrl‚ÌƒXƒNƒ[ƒ‹‚ÌRect‚Ìæ“¾Rect priGetScrlRect( ControlHandle theScrl );//theScrl‚ÌƒXƒNƒ[ƒ‹‚ÌRect‚Ìİ’èvoid priSetScrlRect( ControlHandle theScrl, Rect scrlRect );//Control‚ÌˆÊ’u‚ğV‚µ‚¢Rect(winRect == theWindow->PortRect)‚É‡‚í‚¹‚évoid priMoveScrlBar( WindowPtr theWindow, Rect winRect, Rect oldPortRect, short kind );
+
+
+/*************************** Utilityé–¢æ•° *************************/
+
+Boolean priCanGetThisWindowFeatureRgn( WindowPtr theWindow, WindowRegionCode typeCode );	//typeCodeãŒæŒ‡ã™Rgnã‚’theWindowãŒæŒã£ã¦ã„ã‚‹ã‹èª¿ã¹ã‚‹
+Boolean priIsFloatOSShowFlag( WindowPtr theWindow );	//OSEventæ™‚ã«è¡¨ç¤ºãƒ»éè¡¨ç¤ºã®ãƒ•ãƒ©ã‚°ã‚’è¿”ã™
+void priSetFloatOSShowFlag( WindowPtr theWindow, Boolean showFlag );	//OSEventæ™‚ã«è¡¨ç¤ºãƒ»éè¡¨ç¤ºã®ãƒ•ãƒ©ã‚°ã‚’è¨­å®šã™ã‚‹
+Boolean priIsFloatWindow( WindowPtr theWindow );	//theWindowãŒFloatingWindowã‹ã‚’èª¿ã¹ã‚‹
+Boolean priIsFloatWindowUseTitleBar( WindowPtr theWindow );	//theWindowãŒFloatingWindowã‹ã‚’TitleBarã®å¹…ã‚’ä½¿ã£ã¦èª¿ã¹ã‚‹
+
+void priBringFWindow( void );		//ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’å‰ã«æŒã£ã¦ãã‚‹
+Boolean priIsClickFWindow( WindowPtr window );	//FloatingWindowã‚’ã‚¯ãƒªãƒƒã‚¯ã—ãŸã‹èª¿ã¹ã‚‹
+
+void priActivateCtrl( WindowPtr theWindow );	//ActivateControlå‡¦ç†
+void priDeactivateCtrl( WindowPtr theWindow );	//DeactivateControlå‡¦ç†
+
+Boolean priIsFWindowProcID( const short procID );	//procIDãŒFloatingWindowã®procIDã‹ã‚’ãƒã‚§ãƒƒã‚¯
+mtFWDataPtr priNewFloatData( void );		//FloatingWindowDataã‚’æ–°ã—ãä½œã‚‹
+void priCheckWindowRect( WindowPtr theWindow, Rect maxSize );	//PortRectã®ãƒã‚§ãƒƒã‚¯
+void priSettingWindowData( Boolean isFloatWindow, WindowPtr theWindow );	//FloatingWindowã®refConã®è¨­å®š
+
+//_______________________ ãƒ‰ãƒ©ãƒƒã‚° _____________________________//
+void priClickFWDrag( WindowPtr window, Point mouse );	//ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒ‰ãƒ©ãƒƒã‚°
+	
+void priDragDocWindow( WindowPtr window, Point mouse );		//æ¨™æº–ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒ‰ãƒ©ãƒƒã‚°å‡¦ç†
+void priChangeDocWindow( WindowPtr window );	//æ¨™æº–ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒ‰ãƒ©ãƒƒã‚°å¾Œã®Activeãƒ»Deactiveå‡¦ç†
+//__________________________________________________________//
+
+
+void priWindowGrow( WindowPtr window, Point clickPt, GetZoomGrowSizeData zoom_growSize );	//æ¨™æº–ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»ã‚µã‚¤ã‚ºå‡¦ç†
+void priFWindowGrow( WindowPtr theWindow, Point clickPt );	//ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»ã‚µã‚¤ã‚ºå‡¦ç†
+
+void priWindowZoom( WindowPtr theWindow, short partCode, Point clickPt );	//æ¨™æº–ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»ã‚ºãƒ¼ãƒ ãƒœãƒƒã‚¯ã‚¹å‡¦ç†
+void priWindowGoAway( WindowPtr theWindow, Point clickPt, GoAwayRoutine userRoutine );	//æ¨™æº–ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»goAwayãƒœãƒƒã‚¯ã‚¹å‡¦ç†
+
+void priActivateWindow( Boolean isOSEvt );	//ActivateWindowå‡¦ç†ï¼ˆOSEventå‡¦ç†ã‚’å«ã‚€ï¼‰
+void priDeactivateWindow( Boolean isOSEvt );	//Deactivateå‡¦ç†ï¼ˆOSEventå‡¦ç†ã‚’å«ã‚€ï¼‰
+/**************************************************************/
+
+//theWindowã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã‚¢ã‚¯ã‚·ãƒ§ãƒ³UPP
+void priScrollWindowAction( ControlHandle theCtrl, ControlPartCode thePart );
+//æ¨™æº–ScrollBar( å³éƒ¨ãƒ»ä¸‹éƒ¨ )ã®ç§»å‹•ã¨ã‚µã‚¤ã‚ºå¤‰æ›´
+void priStandardMoveScrlBar( WindowPtr theWindow, Rect oldPortRect );
+//Controlã®ä½ç½®ã¨ã‚µã‚¤ã‚ºã‚’æ–°ã—ã„Rect(winRect == theWindow->PortRect)ã«åˆã‚ã›ã‚‹
+void priMoveSizeScrlBar( ControlHandle theScrl, Rect winRect, Rect oldPortRect,
+							short growIconSize );
+//æ¨™æº–ScrollBar( å³éƒ¨ãƒ»ä¸‹éƒ¨ )ã®ControlHandleã‚’å¾—ã‚‹
+ControlHandle priGetStandardScrlBar( WindowPtr theWindow, Rect oldPortRect, short kind );
+void priSetWindowScrlUnit( ControlHandle theScrl, mtScrlUnitPtr scrlData  );	//Windowã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ™‚ã®å˜ä½ã¨ç¨®é¡ã®è¨­å®š
+void priSetScrlBarMax( ControlHandle theScrl, mtWindowScrlUnit scrlData );	//æ¨™æº–ScrollBar( å³éƒ¨ãƒ»ä¸‹éƒ¨ )ã®MaxValueã®å¤‰æ›´
+//theScrlã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã®Rectã®å–å¾—
+Rect priGetScrlRect( ControlHandle theScrl );
+//theScrlã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã®Rectã®è¨­å®š
+void priSetScrlRect( ControlHandle theScrl, Rect scrlRect );
+//Controlã®ä½ç½®ã‚’æ–°ã—ã„Rect(winRect == theWindow->PortRect)ã«åˆã‚ã›ã‚‹
+void priMoveScrlBar( WindowPtr theWindow, Rect winRect, Rect oldPortRect, short kind );

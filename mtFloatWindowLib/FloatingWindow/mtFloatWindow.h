@@ -1,1 +1,307 @@
-//__________________________________________////											////	FloatingWindow Function							////											////											////__________________________________________////											//#ifndef		____MTFLOATWINDOW____#define		____MTFLOATWINDOW____#define GetWidth( r )		( (r).right - (r).left )#define GetHeight( r )		( (r).bottom - (r).top )//ƒEƒBƒ“ƒhƒEƒXƒNƒ[ƒ‹‚ÌƒAƒbƒvƒf[ƒgŠÖ”‚Ö‚Ìƒ|ƒCƒ“ƒ^typedef	void (*UpdateRoutine )( WindowPtr theWindow, RgnHandle upRgn );//Scroll Unit//Window‚ÌƒXƒNƒ[ƒ‹‚Ì’PˆÊ‚Æí—Ştypedef struct mtWindowScrlUnit{	short			unit;			//1’PˆÊ	short			onePageUnit;	//	short			moveKind;	Rect			scrlRect;		//“à•”‚Åg—p	UpdateRoutine	userRoutine;	long			refCon;}mtWindowScrlUnit;typedef mtWindowScrlUnit*	mtScrlUnitPtr;typedef struct mtFloatData{	long				floatingKind;	short				floatNumber;	//FloatingWindow‚Ìì‚ç‚ê‚½‡”Ô‚Ì”Ô†	Boolean			osEvtShowFlag;	//OSEvent‚É•\¦E”ñ•\¦‚Ìƒtƒ‰ƒO	long				userRefCon;		//user‚ªg—p‚·‚éRefCon}mtFloatData;typedef mtFloatData*		mtFWDataPtr;//GrowWindow‚Ì‚Ég—ptypedef struct mtWindowSizeData{	short		minWidth;		// ‰¡•‚ÌÅ¬’l	short		minHeight;		// c•‚ÌÅ¬’l	Rect		widthSize;		//‚Ç‚êˆÊ‚¸‚Â‘å‚«‚­‚·‚é‚©A						// top = c E left = ‰¡						// rightEbottom = plusƒ¿(ƒXƒNƒ[ƒ‹ƒo[‚Ì•ª‚È‚Ç)}mtWindowSizeData;#define		floatKind		6121520// mtEEE = public// priEEE = private// proEEE = protected#define	inFloatGoAway		-6		//ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚ÌGoAwayBox#define	inFloatContent			-3	//ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚ÌContent#define	inDeactiveWindow		-9		//ƒEƒBƒ“ƒhƒE‚ÌØ‚è‘Ö‚¦//FloatingWindow‚ÌDisposeˆ—‚ÌUserRoutinetypedef	void ( *FWClearRoutine )( long* refCon );//GoAwayBox‚ğClick‚Ìˆ—typedef	Boolean ( *GoAwayRoutine )( short thePart, Boolean goAwayFlag, WindowPtr theWindow );//FloatingWindow‚ÌUpDateˆ—‚ÌUserRoutinetypedef	void ( *UpDateRoutine )( WindowPtr theFloatWindow );//ScrlBarMovAndSizChangeRoutinetypedef	void ( *ScrlMoveSizeRoutine )( WindowPtr theWindow, Rect oldWindowPortRect );//Window‚ÌZoom‚ÆGrow‚ÌGetZoomGrowSizeDataRoutinetypedef	mtWindowSizeData ( *GetZoomGrowSizeData )( void );/********************* Utility **********************************************//*************************	Get FloatWindow Lot Number	*************************/short mtGetFloatWindowNumber( WindowPtr theFloatWindow );	//theFloatWindow‚Ìì‚ç‚ê‚½”Ô†‚ğ•Ô‚·iFloatingWindow‚Å–³‚¯‚ê‚Î0‚ğ•Ô‚·j/*************************	Control Activate Deactivate	*************************/void mtActivateDeactivateCtrl( WindowPtr theWindow, Boolean isActivate );	//Control‚ÌActivateEDeactivateˆ—ControlHandle mtGetWindowCtrlList( WindowPtr theWindow );	//theWindow‚É‚ ‚éControlList( æ“ª‚ÌControlHandle‚Ö‚Ìƒ|ƒCƒ“ƒ^ )‚ğ“¾‚é/*************************	Set Get RefCon			*************************/void mtSetFWRefCon( WindowPtr theFloatWindow, long data );	//FloatWindow‚ÌRefCon‚ğİ’è‚·‚élong mtGetFWRefCon( WindowPtr theFloatWindow );	//FloatWindow‚ÌRefCon‚ğæ“¾‚·‚é/*************************	Window Clipping			*************************/Rect mtSetClipRect( WindowPtr theWindow, Rect clipArea );	//theWindow‚ğclipArea‚ÅƒNƒŠƒbƒsƒ“ƒO‚µ‚ÄAƒNƒŠƒbƒsƒ“ƒO‚³‚ê‚Ä‚¢‚½Rect‚ğ•Ô‚·Rect mtGetClipRect( WindowPtr theWindow );	//theWindow‚ÌClipRgn‚ÌRect‚ğ“¾‚évoid mtSetClipRgn( WindowPtr theWindow, RgnHandle clipArea );		//theWindow‚ğclipArea‚ÅƒNƒŠƒbƒsƒ“ƒO‚µ‚ÄAclipArea‚ğƒNƒŠƒbƒsƒ“ƒO‚³‚ê‚Ä‚¢‚½Region‚É‚·‚é/*************************	ShowWindowRgn			*************************/RgnHandle mtShowWindowContentRgn( WindowPtr theWindow );	//theWindow‚ÌContentRgn‚ğ•Ô‚·RgnHandle mtShowWindowStrucRgn( WindowPtr theWindow );	//theWindow‚ÌSrucRgn‚ğ•Ô‚·RgnHandle mtShowWindowUpdateRgn( WindowPtr theWindow );	//theWindow‚ÌUpdateRgn‚ğ•Ô‚·Rect mtGetWindowMaxPortRect( WindowPtr theWindow );		//theWindow->portRect‚ÌÅ‘åƒTƒCƒY‚ğ“¾‚é/*************************	GetWindowRgnRect		*************************/Rect mtGetWindowContentRect( WindowPtr theWindow );		//theWindow‚ÌContentRect‚ğ•Ô‚·Rect mtGetWindowStrucRect( WindowPtr theWindow );		//theWindow‚ÌSrucRect‚ğ•Ô‚·/*************************	Get WindowFeature Region	*************************/enum{	//const short widthCode		rgnHeight = 1,		rgnWidth};short mtGetWindowFeatureRgnWidth( WindowPtr theWindow, WindowRegionCode typeCode, const short widthCode );	//theWindow‚ÌtypeCode‚Åw’è‚µ‚½Rgn‚Ì•( ‚©‚‚³ )‚ğ•Ô‚·/*************************	FloatingWindow Show Hide	*************************/void mtShowHideFWindow( WindowPtr theWindow, Boolean isShow );	//ƒEƒBƒ“ƒhƒE‚Ì•\¦§Œävoid mtAllShowHideFWindow( Boolean isShow );		//‘S‚Ä‚Ìƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚ğ•\¦E”ñ•\¦short mtAutoShowHideFWindow( WindowPtr theWindow );	//ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚ğ•\¦E”ñ•\¦‚ğ©“®“I‚ÉŒˆ‚ß‚é	/*•\¦‚µ‚½‚È‚ç1‚ğ•Ô‚· FloatingWindow‚Å‚Í–³‚¢‚È‚ç-1*/enum{		sFWindow = 1,		hFWindow = 2,		noFWindow = -1};/*************************	Find FloatingWindow		*************************/WindowPtr mtGetFirstFloatWindow( void );	//ˆê”Ô‘O‚É‚ ‚éFloatingWindow‚ğ’T‚·i–³‚¯‚ê‚Înil‚ğ•Ô‚·jWindowPtr mtGetNextFloatWindow( WindowPtr floatWindow ); //floatWindow‚ÌŸ‚É‚­‚éFloatingWindow‚ğ•Ô‚·i–³‚¯‚ê‚Înil‚ğ•Ô‚·jWindowPtr mtGetFWinWithNum( short windowNumber );	//FloatingWindow‚Ìì‚ç‚ê‚½”Ô†‚©‚çFloatingWindow‚ğ’T‚µ‚Ä•Ô‚·i–³‚¯‚ê‚Înil‚ğ•Ô‚·j/*************************	Find Active DocWindow		*************************/WindowPtr mtGetActiveDocWindow( void );	//Œ»İƒAƒNƒeƒBƒu‚È(FloatingWindow‚Ì‚·‚®Œã‚ë‚Ì)ƒhƒLƒ…ƒƒ“ƒgƒEƒBƒ“ƒhƒE‚ğ•Ô‚·/******************************************************************************//********************* ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚Ìì¬ ‚Æ”jŠü*******************//*************************	NewWindow				*************************/WindowPtr mtNewWindow( short procID, Rect winRect, Boolean closeBox, Str255 title, const Rect windowMaxSize, Boolean visble );	//ƒEƒBƒ“ƒhƒEEƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚Ìì¬	WindowPtr mtGetNewWindow( short resourceID, const Rect windowMaxSize, Boolean isFloat );	//ƒEƒBƒ“ƒhƒEEƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚ÌƒŠƒ\[ƒX‚©‚ç‚Ìì¬/*************************	Dispose FloatWindow		*************************/void mtClearAllFloatWindow( FWClearRoutine userRoutine );	//‘S‚Ä‚ÌFloatingWindow‚ÌDisposevoid mtClearFloatWindow( WindowPtr theWindow, FWClearRoutine userRoutine );	//FloatingWindow‚ÌDisposevoid mtClearNumOfFloatWindow( short number, FWClearRoutine userRoutine );	//number‚Åw’è‚µ‚½”Ô†‚ÌFloatingWindow‚ÌDispose/******************* ƒEƒBƒ“ƒhƒEEƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚ÌƒCƒxƒ“ƒg ******************//*********************************	WindowEFloatWindow Mouse Event		*********************************///•Ô‚è’l = { inMenuBar, inContent, inFloatContent, inCollapseBox, inSysWindow//theWindow = ˆ—‘ÎÛ‚ÌWindow//thePart = FindWindow‚Ì•Ô‚è’lshort mtMouseEventFloat( WindowPtr theWindow, short thePart, Point clickPt, GoAwayRoutine goAwayRoutine, GetZoomGrowSizeData zoom_growSize );/*************************	FloatWindow Update		*************************/Boolean mtUpdateIsFWindow( WindowPtr theWindow, UpDateRoutine userRoutine );	//ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚ÌƒAƒbƒvƒf[ƒgvoid mtActiveDeactiveWindow( Boolean active_deactive, Boolean isOSEvt );	//ƒEƒBƒ“ƒhƒE‚ÌƒAƒNƒeƒBƒx[ƒgEƒfƒBƒAƒNƒeƒBƒx[ƒg/********************* theWindow‚ÌScroll *******************//*mtTrackWindow ScrlBarKind*/enum{		vScrl = 4,	//Vertical Scroll		hScrl = 8	//Horizontal Scroll};//scrlBarKind = ƒXƒNƒ[ƒ‹ƒo[‚Ìí—Ş†Õ//cƒXƒNƒ[ƒ‹‚Ì‚Íwidth‚Í–³‹A‰¡ƒXƒNƒ[ƒ‹‚Ì‚Íheight‚Í–³‹ControlHandle mtNewStandardScrollBar( WindowPtr theWindow, Boolean visible,								const short height, const short width, const short scrlBarKind );//theWindow‚Éİ’è‚³‚ê‚Ä‚¢‚éƒXƒNƒ[ƒ‹ƒo[‚ÌDisposevoid mtDisposeScrllBarData( WindowPtr theWindow );//ScrollBar‚ÌTrackingshort mtTrackWindowScrlBar( ControlHandle theCtrl, Point clickPt, ControlPartCode thePart,					Rect clipArea, ControlActionUPP userAction );//theWindow‚ÌScroll(Œ´“_‚ÌˆÚ“®)void mtScrollWindow( WindowPtr theWindow, short vMove, short hValue );//theScrl‚ÌƒXƒNƒ[ƒ‹‚Ì’PˆÊ‚Æí—Ş‚Ìİ’èvoid mtSetScrlUnit( ControlHandle theScrl, short unit, short oneUnit, short moveKind, UpdateRoutine userRoutine );mtWindowScrlUnit mtGetWindowScrlUnit( ControlHandle theScrl );	//Window‚ÌƒXƒNƒ[ƒ‹‚Ì’PˆÊ‚Æí—Ş‚Ìæ“¾//theScrl‚ÌƒXƒNƒ[ƒ‹‚Ìí—Ş‚Ìæ“¾(mtTrackWindowScrlBarKind)short mtGetScrlMoveKind( ControlHandle theScrl );//•W€ScrollBar( ‰E•”E‰º•” )‚Ì•`‰ævoid mtDrawScrlBar( WindowPtr theWindow );/*************************************************************/#endif/*//theWindow‚ÌƒXƒNƒ[ƒ‹ƒAƒNƒVƒ‡ƒ“UPPvoid priScrollWindowAction( ControlHandle theCtrl, ControlPartCode thePart ){	WindowPtr	theWindow = (*theCtrl)->contrlOwner;		if( theWindow != nil )	{		SetPort( theWindow );				mtWindowScrlUnit	scrlData = mtGetWindowScrlUnit( theCtrl );		const short		ctrlValue = GetControlValue( theCtrl );		short			moveValue = 0;		Rect				portRect = theWindow->portRect;		short			moveKind = scrlData.moveKind;		short			unit = scrlData.unit;		short			oneUnit = scrlData.onePageUnit;				switch( thePart )		{			case( kControlUpButtonPart ) :				moveValue = -unit;			break;						case( kControlDownButtonPart ) :				moveValue = unit;			break;						case( kControlPageUpPart ) :				moveValue = -oneUnit;			break;						case( kControlPageDownPart ) :				moveValue = oneUnit;			break;		};				SetControlValue( theCtrl, ctrlValue + moveValue );				short		maxValue = GetControlMaximum( theCtrl );			if( ( ctrlValue == 0 and moveValue < 0 ) or			( ctrlValue == maxValue and moveValue > 0 )		   )		{			moveValue = 0;			}				if( moveValue != 0 )		{			short	vValue = 0;			short	hValue = 0;			Rect		scrlArea = scrlData.scrlRect;	//theScrl‚ÌƒXƒNƒ[ƒ‹‚ÌRect‚Ìæ“¾			Rect		saveClip = mtGetClipRect( theWindow );						if( moveKind == vScrl ){		vValue = moveValue;	}			else if( moveKind == hScrl ){	hValue = moveValue;	}			//‚Ü‚¸AscrlArea‚Ì¶ã‚ğportRect‚Ì¶ã‚É‡‚í‚¹‚é			OffsetRect( &scrlArea, portRect.left - scrlArea.left, portRect.top - scrlArea.top );			//scrlArea‚ğ“®‚©‚·•ª‚¾‚¯æ‚ÉˆÚ“®‚³‚¹‚Ä‚¨‚­			OffsetRect( &scrlArea, hValue, vValue );			//‚»‚Ì‹éŒ`‚ğƒNƒŠƒbƒv			ClipRect( &scrlArea );			//ƒXƒNƒ[ƒ‹‚³‚¹‚é			mtScrollWindow( theWindow, vValue, hValue );			ScrollRect( &scrlArea, -hValue, -vValue, nil );						ClipRect( &saveClip );		}	}}*/
+//__________________________________________//
+//											//
+//	FloatingWindow Function							//
+//											//
+//											//
+//__________________________________________//
+//											//
+
+#ifndef		____MTFLOATWINDOW____
+#define		____MTFLOATWINDOW____
+
+#define GetWidth( r )		( (r).right - (r).left )
+#define GetHeight( r )		( (r).bottom - (r).top )
+
+//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ™‚ã®ã‚¢ãƒƒãƒ—ãƒ‡ãƒ¼ãƒˆé–¢æ•°ã¸ã®ãƒã‚¤ãƒ³ã‚¿
+typedef	void (*UpdateRoutine )( WindowPtr theWindow, RgnHandle upRgn );
+//Scroll Unit//Windowã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ™‚ã®å˜ä½ã¨ç¨®é¡
+typedef struct mtWindowScrlUnit
+{
+	short			unit;			//1å˜ä½
+	short			onePageUnit;	//
+	short			moveKind;
+	Rect			scrlRect;		//å†…éƒ¨ã§ä½¿ç”¨
+	UpdateRoutine	userRoutine;
+	long			refCon;
+
+}mtWindowScrlUnit;
+typedef mtWindowScrlUnit*	mtScrlUnitPtr;
+
+
+typedef struct mtFloatData
+{
+	long				floatingKind;
+	short				floatNumber;	//FloatingWindowã®ä½œã‚‰ã‚ŒãŸé †ç•ªã®ç•ªå·
+	Boolean			osEvtShowFlag;	//OSEventæ™‚ã«è¡¨ç¤ºãƒ»éè¡¨ç¤ºã®ãƒ•ãƒ©ã‚°
+	long				userRefCon;		//userãŒä½¿ç”¨ã™ã‚‹RefCon
+
+}mtFloatData;
+typedef mtFloatData*		mtFWDataPtr;
+
+//GrowWindowã®æ™‚ã«ä½¿ç”¨
+typedef struct mtWindowSizeData
+{
+	short		minWidth;		// æ¨ªå¹…ã®æœ€å°å€¤
+	short		minHeight;		// ç¸¦å¹…ã®æœ€å°å€¤
+	Rect		widthSize;		//ã©ã‚Œä½ãšã¤å¤§ããã™ã‚‹ã‹ã€
+						// top = ç¸¦ ãƒ» left = æ¨ª
+						// rightãƒ»bottom = plusÎ±(ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ã®åˆ†ãªã©)
+
+}mtWindowSizeData;
+
+#define		floatKind		6121520
+
+// mtãƒ»ãƒ»ãƒ» = public
+// priãƒ»ãƒ»ãƒ» = private
+// proãƒ»ãƒ»ãƒ» = protected
+
+
+#define	inFloatGoAway		-6		//ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®GoAwayBox
+#define	inFloatContent			-3	//ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®Content
+#define	inDeactiveWindow		-9		//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®åˆ‡ã‚Šæ›¿ãˆ
+
+//FloatingWindowã®Disposeå‡¦ç†æ™‚ã®UserRoutine
+typedef	void ( *FWClearRoutine )( long* refCon );
+//GoAwayBoxã‚’Clickæ™‚ã®å‡¦ç†
+typedef	Boolean ( *GoAwayRoutine )( short thePart, Boolean goAwayFlag, WindowPtr theWindow );
+//FloatingWindowã®UpDateå‡¦ç†æ™‚ã®UserRoutine
+typedef	void ( *UpDateRoutine )( WindowPtr theFloatWindow );
+//ScrlBarMovAndSizChangeRoutine
+typedef	void ( *ScrlMoveSizeRoutine )( WindowPtr theWindow, Rect oldWindowPortRect );
+//Windowã®Zoomã¨Growæ™‚ã®GetZoomGrowSizeDataRoutine
+typedef	mtWindowSizeData ( *GetZoomGrowSizeData )( void );
+
+/********************* Utility **********************************************/
+
+/************************
+*	Get FloatWindow Lot Number	*
+************************/
+short mtGetFloatWindowNumber( WindowPtr theFloatWindow );	//theFloatWindowã®ä½œã‚‰ã‚ŒãŸç•ªå·ã‚’è¿”ã™ï¼ˆFloatingWindowã§ç„¡ã‘ã‚Œã°0ã‚’è¿”ã™ï¼‰
+
+
+/************************
+*	Control Activate Deactivate	*
+************************/
+void mtActivateDeactivateCtrl( WindowPtr theWindow, Boolean isActivate );	//Controlã®Activateãƒ»Deactivateå‡¦ç†
+ControlHandle mtGetWindowCtrlList( WindowPtr theWindow );	//theWindowã«ã‚ã‚‹ControlList( å…ˆé ­ã®ControlHandleã¸ã®ãƒã‚¤ãƒ³ã‚¿ )ã‚’å¾—ã‚‹
+
+
+/************************
+*	Set Get RefCon			*
+************************/
+void mtSetFWRefCon( WindowPtr theFloatWindow, long data );	//FloatWindowã®RefConã‚’è¨­å®šã™ã‚‹
+long mtGetFWRefCon( WindowPtr theFloatWindow );	//FloatWindowã®RefConã‚’å–å¾—ã™ã‚‹
+
+
+/************************
+*	Window Clipping			*
+************************/
+Rect mtSetClipRect( WindowPtr theWindow, Rect clipArea );	//theWindowã‚’clipAreaã§ã‚¯ãƒªãƒƒãƒ”ãƒ³ã‚°ã—ã¦ã€ã‚¯ãƒªãƒƒãƒ”ãƒ³ã‚°ã•ã‚Œã¦ã„ãŸRectã‚’è¿”ã™
+Rect mtGetClipRect( WindowPtr theWindow );	//theWindowã®ClipRgnã®Rectã‚’å¾—ã‚‹
+void mtSetClipRgn( WindowPtr theWindow, RgnHandle clipArea );		//theWindowã‚’clipAreaã§ã‚¯ãƒªãƒƒãƒ”ãƒ³ã‚°ã—ã¦ã€clipAreaã‚’ã‚¯ãƒªãƒƒãƒ”ãƒ³ã‚°ã•ã‚Œã¦ã„ãŸRegionã«ã™ã‚‹
+
+/************************
+*	ShowWindowRgn			*
+************************/
+RgnHandle mtShowWindowContentRgn( WindowPtr theWindow );	//theWindowã®ContentRgnã‚’è¿”ã™
+RgnHandle mtShowWindowStrucRgn( WindowPtr theWindow );	//theWindowã®SrucRgnã‚’è¿”ã™
+RgnHandle mtShowWindowUpdateRgn( WindowPtr theWindow );	//theWindowã®UpdateRgnã‚’è¿”ã™
+Rect mtGetWindowMaxPortRect( WindowPtr theWindow );		//theWindow->portRectã®æœ€å¤§ã‚µã‚¤ã‚ºã‚’å¾—ã‚‹
+
+
+/************************
+*	GetWindowRgnRect		*
+************************/
+Rect mtGetWindowContentRect( WindowPtr theWindow );		//theWindowã®ContentRectã‚’è¿”ã™
+Rect mtGetWindowStrucRect( WindowPtr theWindow );		//theWindowã®SrucRectã‚’è¿”ã™
+
+
+
+/************************
+*	Get WindowFeature Region	*
+************************/
+enum{	//const short widthCode
+		rgnHeight = 1,
+		rgnWidth
+};
+short mtGetWindowFeatureRgnWidth( WindowPtr theWindow, WindowRegionCode typeCode, const short widthCode );	//theWindowã®typeCodeã§æŒ‡å®šã—ãŸRgnã®å¹…( ã‹é«˜ã• )ã‚’è¿”ã™
+
+
+/************************
+*	FloatingWindow Show Hide	*
+************************/
+void mtShowHideFWindow( WindowPtr theWindow, Boolean isShow );	//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®è¡¨ç¤ºåˆ¶å¾¡
+void mtAllShowHideFWindow( Boolean isShow );		//å…¨ã¦ã®ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’è¡¨ç¤ºãƒ»éè¡¨ç¤º
+short mtAutoShowHideFWindow( WindowPtr theWindow );	//ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’è¡¨ç¤ºãƒ»éè¡¨ç¤ºã‚’è‡ªå‹•çš„ã«æ±ºã‚ã‚‹	/*è¡¨ç¤ºã—ãŸãªã‚‰1ã‚’è¿”ã™ FloatingWindowã§ã¯ç„¡ã„ãªã‚‰-1*/
+enum{
+		sFWindow = 1,
+		hFWindow = 2,
+		noFWindow = -1
+};
+
+
+/************************
+*	Find FloatingWindow		*
+************************/
+WindowPtr mtGetFirstFloatWindow( void );	//ä¸€ç•ªå‰ã«ã‚ã‚‹FloatingWindowã‚’æ¢ã™ï¼ˆç„¡ã‘ã‚Œã°nilã‚’è¿”ã™ï¼‰
+WindowPtr mtGetNextFloatWindow( WindowPtr floatWindow ); //floatWindowã®æ¬¡ã«ãã‚‹FloatingWindowã‚’è¿”ã™ï¼ˆç„¡ã‘ã‚Œã°nilã‚’è¿”ã™ï¼‰
+WindowPtr mtGetFWinWithNum( short windowNumber );	//FloatingWindowã®ä½œã‚‰ã‚ŒãŸç•ªå·ã‹ã‚‰FloatingWindowã‚’æ¢ã—ã¦è¿”ã™ï¼ˆç„¡ã‘ã‚Œã°nilã‚’è¿”ã™ï¼‰
+
+
+
+/************************
+*	Find Active DocWindow		*
+************************/
+WindowPtr mtGetActiveDocWindow( void );	//ç¾åœ¨ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ãª(FloatingWindowã®ã™ãå¾Œã‚ã®)ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’è¿”ã™
+
+/******************************************************************************/
+
+
+/********************* ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ä½œæˆ ã¨ç ´æ£„*******************/
+
+/************************
+*	NewWindow				*
+************************/
+WindowPtr mtNewWindow( short procID, Rect winRect, Boolean closeBox, Str255 title, const Rect windowMaxSize, Boolean visble );	//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ä½œæˆ	
+WindowPtr mtGetNewWindow( short resourceID, const Rect windowMaxSize, Boolean isFloat );	//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒªã‚½ãƒ¼ã‚¹ã‹ã‚‰ã®ä½œæˆ
+
+/************************
+*	Dispose FloatWindow		*
+************************/
+void mtClearAllFloatWindow( FWClearRoutine userRoutine );	//å…¨ã¦ã®FloatingWindowã®Dispose
+void mtClearFloatWindow( WindowPtr theWindow, FWClearRoutine userRoutine );	//FloatingWindowã®Dispose
+void mtClearNumOfFloatWindow( short number, FWClearRoutine userRoutine );	//numberã§æŒ‡å®šã—ãŸç•ªå·ã®FloatingWindowã®Dispose
+
+/******************* ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¤ãƒ™ãƒ³ãƒˆ ******************/
+
+/********************************
+*	Windowãƒ»FloatWindow Mouse Event		*
+********************************/
+//è¿”ã‚Šå€¤ = { inMenuBar, inContent, inFloatContent, inCollapseBox, inSysWindow
+//theWindow = å‡¦ç†å¯¾è±¡ã®Window
+//thePart = FindWindowã®è¿”ã‚Šå€¤
+short mtMouseEventFloat( WindowPtr theWindow, short thePart, Point clickPt, GoAwayRoutine goAwayRoutine, GetZoomGrowSizeData zoom_growSize );
+
+/************************
+*	FloatWindow Update		*
+************************/
+Boolean mtUpdateIsFWindow( WindowPtr theWindow, UpDateRoutine userRoutine );	//ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¢ãƒƒãƒ—ãƒ‡ãƒ¼ãƒˆ
+void mtActiveDeactiveWindow( Boolean active_deactive, Boolean isOSEvt );	//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¢ã‚¯ãƒ†ã‚£ãƒ™ãƒ¼ãƒˆãƒ»ãƒ‡ã‚£ã‚¢ã‚¯ãƒ†ã‚£ãƒ™ãƒ¼ãƒˆ
+
+
+/********************* theWindowã®Scroll *******************/
+
+
+/*mtTrackWindow ScrlBarKind*/
+enum{
+		vScrl = 4,	//Vertical Scroll
+		hScrl = 8	//Horizontal Scroll
+};
+
+//scrlBarKind = ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ã®ç¨®é¡â‡§ï¡º
+//ç¸¦ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã®æ™‚ã¯widthã¯ç„¡è¦–ã€æ¨ªã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã®æ™‚ã¯heightã¯ç„¡è¦–
+ControlHandle mtNewStandardScrollBar( WindowPtr theWindow, Boolean visible,
+								const short height, const short width, const short scrlBarKind );
+
+//theWindowã«è¨­å®šã•ã‚Œã¦ã„ã‚‹ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ã®Dispose
+void mtDisposeScrllBarData( WindowPtr theWindow );
+
+//ScrollBarã®Tracking
+short mtTrackWindowScrlBar( ControlHandle theCtrl, Point clickPt, ControlPartCode thePart,
+					Rect clipArea, ControlActionUPP userAction );
+
+//theWindowã®Scroll(åŸç‚¹ã®ç§»å‹•)
+void mtScrollWindow( WindowPtr theWindow, short vMove, short hValue );
+
+//theScrlã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ™‚ã®å˜ä½ã¨ç¨®é¡ã®è¨­å®š
+void mtSetScrlUnit( ControlHandle theScrl, short unit, short oneUnit, short moveKind, UpdateRoutine userRoutine );
+
+mtWindowScrlUnit mtGetWindowScrlUnit( ControlHandle theScrl );	//Windowã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ™‚ã®å˜ä½ã¨ç¨®é¡ã®å–å¾—
+//theScrlã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã®ç¨®é¡ã®å–å¾—(mtTrackWindowScrlBarKind)
+short mtGetScrlMoveKind( ControlHandle theScrl );
+
+//æ¨™æº–ScrollBar( å³éƒ¨ãƒ»ä¸‹éƒ¨ )ã®æç”»
+void mtDrawScrlBar( WindowPtr theWindow );
+
+/*************************************************************/
+
+#endif
+
+/*
+
+//theWindowã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã‚¢ã‚¯ã‚·ãƒ§ãƒ³UPP
+void priScrollWindowAction( ControlHandle theCtrl, ControlPartCode thePart )
+{
+	WindowPtr	theWindow = (*theCtrl)->contrlOwner;
+	
+	if( theWindow != nil )
+	{
+		SetPort( theWindow );
+		
+		mtWindowScrlUnit	scrlData = mtGetWindowScrlUnit( theCtrl );
+		const short		ctrlValue = GetControlValue( theCtrl );
+		short			moveValue = 0;
+		Rect				portRect = theWindow->portRect;
+		short			moveKind = scrlData.moveKind;
+		short			unit = scrlData.unit;
+		short			oneUnit = scrlData.onePageUnit;
+
+		
+		switch( thePart )
+		{
+			case( kControlUpButtonPart ) :
+				moveValue = -unit;
+			break;
+			
+			case( kControlDownButtonPart ) :
+				moveValue = unit;
+			break;
+			
+			case( kControlPageUpPart ) :
+				moveValue = -oneUnit;
+			break;
+			
+			case( kControlPageDownPart ) :
+				moveValue = oneUnit;
+			break;
+
+		};
+		
+		SetControlValue( theCtrl, ctrlValue + moveValue );
+		
+		short		maxValue = GetControlMaximum( theCtrl );
+	
+		if( ( ctrlValue == 0 and moveValue < 0 ) or
+			( ctrlValue == maxValue and moveValue > 0 )
+		   )
+		{
+			moveValue = 0;	
+		}
+		
+		if( moveValue != 0 )
+		{
+			short	vValue = 0;
+			short	hValue = 0;
+			Rect		scrlArea = scrlData.scrlRect;	//theScrlã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã®Rectã®å–å¾—
+			Rect		saveClip = mtGetClipRect( theWindow );
+			
+			if( moveKind == vScrl ){		vValue = moveValue;	}
+			else if( moveKind == hScrl ){	hValue = moveValue;	}
+
+			//ã¾ãšã€scrlAreaã®å·¦ä¸Šã‚’portRectã®å·¦ä¸Šã«åˆã‚ã›ã‚‹
+			OffsetRect( &scrlArea, portRect.left - scrlArea.left, portRect.top - scrlArea.top );
+			//scrlAreaã‚’å‹•ã‹ã™åˆ†ã ã‘å…ˆã«ç§»å‹•ã•ã›ã¦ãŠã
+			OffsetRect( &scrlArea, hValue, vValue );
+			//ãã®çŸ©å½¢ã‚’ã‚¯ãƒªãƒƒãƒ—
+			ClipRect( &scrlArea );
+			//ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã•ã›ã‚‹
+			mtScrollWindow( theWindow, vValue, hValue );
+			ScrollRect( &scrlArea, -hValue, -vValue, nil );
+			
+			ClipRect( &saveClip );
+		}
+	}
+}
+
+
+*/

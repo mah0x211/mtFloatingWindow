@@ -1,1 +1,284 @@
-//__________________________________________////											////	1999îNÅ@10åé30ì˙							////											////											////__________________________________________////											////include#ifndef		____MTFLOATWINDOW____#include"mtFloatWindow.h"#endif#include"mtFloatWindowPri.h"#pragma mark -#pragma mark === DISPOSE FLOATINGWINDOW//ëSÇƒÇÃFloatingWindowÇÃDisposevoid mtClearAllFloatWindow( FWClearRoutine userRoutine ){	WindowPtr	theWindow = mtGetFirstFloatWindow();		while( theWindow != nil )	{		mtFWDataPtr		fwindowData = (mtFWDataPtr)GetWRefCon( theWindow );		if( userRoutine != nil ){	userRoutine( &fwindowData->userRefCon );	}			if( fwindowData != nil ){	delete fwindowData;	}				//theWindowÇ…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[ÇÃDispose		mtDisposeScrllBarData( theWindow );				KillControls( theWindow );		DisposeWindow( theWindow );				theWindow = mtGetFirstFloatWindow();	}}//FloatingWindowÇÃDisposevoid mtClearFloatWindow( WindowPtr theWindow, FWClearRoutine userRoutine ){	if( theWindow != nil and priIsFloatWindow( theWindow ) )	{		mtFWDataPtr		fwindowData = (mtFWDataPtr)GetWRefCon( theWindow );		if( userRoutine != nil ){	userRoutine( &fwindowData->userRefCon );	}			if( fwindowData != nil ){	delete fwindowData;	}				//theWindowÇ…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[ÇÃDispose		mtDisposeScrllBarData( theWindow );				KillControls( theWindow );		DisposeWindow( theWindow );	}}//numberÇ≈éwíËÇµÇΩî‘çÜÇÃFloatingWindowÇÃDisposevoid mtClearNumOfFloatWindow( short number, FWClearRoutine userRoutine ){	WindowPtr	theWindow = mtGetFWinWithNum( number );		if( theWindow != nil )	{		mtFWDataPtr		fwindowData = (mtFWDataPtr)GetWRefCon( theWindow );		if( userRoutine != nil ){	userRoutine( &fwindowData->userRefCon );	}			if( fwindowData != nil ){	delete fwindowData;	}				//theWindowÇ…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[ÇÃDispose		mtDisposeScrllBarData( theWindow );				KillControls( theWindow );		DisposeWindow( theWindow );	}}#pragma mark -#pragma mark === INIT FLOATING WINDOW DATA//FloatingWindowDataÇêVÇµÇ≠çÏÇÈmtFWDataPtr priNewFloatData( void ){	mtFWDataPtr		fwindowData = new mtFloatData;		if( fwindowData != nil )	{		WindowPtr	floatWindow = mtGetFirstFloatWindow();				fwindowData->floatingKind = floatKind;		fwindowData->userRefCon = 0;		fwindowData->floatNumber = 1;	//FloatingWindowÇÃî‘çÜ		fwindowData->osEvtShowFlag = true;//OSEventéûÇ…ï\é¶ÅEîÒï\é¶ÇÃÉtÉâÉO				while( floatWindow != nil )	//ÉtÉçÅ[ÉeÉBÉìÉOÉEÉBÉìÉhÉEÇ™NULLÇ≈ÇÕñ≥Ç¢ä‘		{			fwindowData->floatNumber++;		//FloatingWindowÇÃî‘çÜÇïtÇØÇÈ			floatWindow = mtGetNextFloatWindow( floatWindow );		}	}		return( fwindowData );}#pragma mark -#pragma mark === NEW FLOATING WINDOW//procIDÇ™FloatingWindowÇÃprocIDÇ©ÇÉ`ÉFÉbÉNBoolean priIsFWindowProcID( const short procID ){	Boolean		isFloatID = false;		const short floatProcIDs[24] = {		floatProc,		floatGrowProc,		floatZoomProc,		floatZoomGrowProc,		floatSideProc,		floatSideGrowProc,		floatSideZoomProc,		floatSideZoomGrowProc,		/* Proc IDs for top title bar theme-savvy floating windows */		kWindowFloatProc,		kWindowFloatGrowProc,		kWindowFloatVertZoomProc,		kWindowFloatVertZoomGrowProc,		kWindowFloatHorizZoomProc,		kWindowFloatHorizZoomGrowProc,		kWindowFloatFullZoomProc,		kWindowFloatFullZoomGrowProc,			/* Proc IDs for side title bar theme-savvy floating windows */		kWindowFloatSideProc,		kWindowFloatSideGrowProc,		kWindowFloatSideVertZoomProc,		kWindowFloatSideVertZoomGrowProc,		kWindowFloatSideHorizZoomProc,		kWindowFloatSideHorizZoomGrowProc,		kWindowFloatSideFullZoomProc,		kWindowFloatSideFullZoomGrowProc	};		for( int i = 0; i < 24; i++ )	{		if( floatProcIDs[i] == procID )		{			isFloatID = true;			break;		}	}	return( isFloatID );}//PortRectÇÃÉ`ÉFÉbÉNvoid priCheckWindowRect( WindowPtr theWindow, Rect maxSize ){	short		sysWidth = GetWidth( qd.screenBits.bounds );	short		sysHeight = GetHeight( qd.screenBits.bounds );	short		maxWidth = GetWidth( maxSize );	short		maxHeight = GetHeight( maxSize );	short		width = GetWidth( theWindow->portRect );	short		height = GetHeight( theWindow->portRect );	short		aWidth = width;	short		aHeight = height;		if( width > maxWidth )	{		aWidth = maxWidth;		if( sysWidth < aWidth ){		aWidth = sysWidth;		}	}	if( height > maxHeight )	{		aHeight = maxHeight;		if( sysHeight < aHeight ){		aHeight = sysHeight;		}	}		SizeWindow( theWindow, aWidth, aHeight, false );}//ÉEÉBÉìÉhÉEÅEÉtÉçÅ[ÉeÉBÉìÉOÉEÉBÉìÉhÉEÇÃçÏê¨Ç∆refConÇÃê›íËWindowPtr mtNewWindow( short procID, Rect winRect, Boolean closeBox, Str255 title, const Rect windowMaxSize, Boolean visible ){	WindowPtr	theWindow = nil;	WindowPtr	activeWindow = mtGetActiveDocWindow();		theWindow = NewCWindow( nil, &winRect, title, visible, procID,								kLastWindowOfClass, closeBox, 0 );	if( theWindow != nil )	{		priSettingWindowData( priIsFWindowProcID( procID ), theWindow );		if( EmptyRect( &windowMaxSize ) == false )		{			priCheckWindowRect( theWindow, windowMaxSize );			SetWindowStandardState( theWindow, &windowMaxSize );	//ÉYÅ[ÉÄÉTÉCÉYÇê›íË		}	}		return( theWindow );}//ÉEÉBÉìÉhÉEÅEÉtÉçÅ[ÉeÉBÉìÉOÉEÉBÉìÉhÉEÇÃÉäÉ\Å[ÉXÇ©ÇÁÇÃçÏê¨Ç∆refConÇÃê›íËWindowPtr mtGetNewWindow( short resourceID, const Rect windowMaxSize, Boolean isFloat ){	WindowPtr	theWindow = nil;	RectPtr		windowRect = nil;		theWindow = GetNewCWindow( resourceID, nil, kLastWindowOfClass );	if( theWindow != nil )	{		priSettingWindowData( isFloat, theWindow );				if( EmptyRect( &windowMaxSize ) == false )		{			priCheckWindowRect( theWindow, windowMaxSize );			SetWindowStandardState( theWindow, &windowMaxSize );	//ç≈ëÂÉYÅ[ÉÄÉTÉCÉYÇê›íË		}	}		return( theWindow );}void priSettingWindowData( Boolean isFloatWindow, WindowPtr theWindow ){	if( isFloatWindow )	{		mtFWDataPtr	fwindowData = priNewFloatData();				if( fwindowData != nil )		{			if( MacIsWindowVisible( theWindow ) == false )			{				fwindowData->osEvtShowFlag = false;//OSEventéûÇ…ï\é¶ÅEîÒï\é¶ÇÃÉtÉâÉO			}			SetWRefCon( theWindow, (long)fwindowData );			SetPort( theWindow );			TextSize( 9 );			priBringFWindow();		}		else{		DisposeWindow( theWindow );		}	}	else	{		priChangeDocWindow( theWindow );	//ÉAÉNÉeÉBÉuÇæÇ¡ÇΩÉEÉBÉìÉhÉEÇÃÉnÉCÉâÉCÉgÇè¡Ç∑	}}/***************************************************************/#pragma mark -#pragma mark === UPDATE FLOATING WINDOW/***************************ÉAÉbÉvÉfÅ[Égèàóù**************************///ÉAÉbÉvÉfÅ[ÉgèàóùÇÃéûÇ…åƒÇ‘Boolean mtUpdateIsFWindow( WindowPtr theWindow, UpDateRoutine userRoutine ){	Boolean		yes_no = false;		//true = ÉtÉçÅ[ÉeÉBÉìÉOÉEÉBÉìÉhÉEÇÃÉAÉbÉvÉfÅ[Ég	if( priIsFloatWindow( theWindow ) )	{		yes_no = true;				SetPort( theWindow );			BeginUpdate( theWindow );			//FloatingWindowÇÃUpdateèàóùÇÃUserRoutine			if( userRoutine != nil ){	userRoutine( theWindow );	}			else{		UpdateControls( theWindow, theWindow->visRgn );	}			EndUpdate( theWindow );	}		return( yes_no );}/******************************************************************/
+//__________________________________________//
+//											//
+//	1999Âπ¥„ÄÄ10Êúà30Êó•							//
+//											//
+//											//
+//__________________________________________//
+//											//
+//include
+#ifndef		____MTFLOATWINDOW____
+#include"mtFloatWindow.h"
+#endif
+
+#include"mtFloatWindowPri.h"
+
+#pragma mark -
+#pragma mark === DISPOSE FLOATINGWINDOW
+
+
+//ÂÖ®„Å¶„ÅÆFloatingWindow„ÅÆDispose
+void mtClearAllFloatWindow( FWClearRoutine userRoutine )
+{
+	WindowPtr	theWindow = mtGetFirstFloatWindow();
+	
+	while( theWindow != nil )
+	{
+		mtFWDataPtr		fwindowData = (mtFWDataPtr)GetWRefCon( theWindow );
+
+		if( userRoutine != nil ){	userRoutine( &fwindowData->userRefCon );	}
+	
+		if( fwindowData != nil ){	delete fwindowData;	}
+		
+		//theWindow„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº„ÅÆDispose
+		mtDisposeScrllBarData( theWindow );
+		
+		KillControls( theWindow );
+		DisposeWindow( theWindow );
+		
+		theWindow = mtGetFirstFloatWindow();
+	}
+}
+
+//FloatingWindow„ÅÆDispose
+void mtClearFloatWindow( WindowPtr theWindow, FWClearRoutine userRoutine )
+{
+	if( theWindow != nil and priIsFloatWindow( theWindow ) )
+	{
+		mtFWDataPtr		fwindowData = (mtFWDataPtr)GetWRefCon( theWindow );
+
+		if( userRoutine != nil ){	userRoutine( &fwindowData->userRefCon );	}
+	
+		if( fwindowData != nil ){	delete fwindowData;	}
+		
+		//theWindow„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº„ÅÆDispose
+		mtDisposeScrllBarData( theWindow );
+		
+		KillControls( theWindow );
+		DisposeWindow( theWindow );
+	}
+}
+
+//number„ÅßÊåáÂÆö„Åó„ÅüÁï™Âè∑„ÅÆFloatingWindow„ÅÆDispose
+void mtClearNumOfFloatWindow( short number, FWClearRoutine userRoutine )
+{
+	WindowPtr	theWindow = mtGetFWinWithNum( number );
+	
+	if( theWindow != nil )
+	{
+		mtFWDataPtr		fwindowData = (mtFWDataPtr)GetWRefCon( theWindow );
+
+		if( userRoutine != nil ){	userRoutine( &fwindowData->userRefCon );	}
+	
+		if( fwindowData != nil ){	delete fwindowData;	}
+		
+		//theWindow„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº„ÅÆDispose
+		mtDisposeScrllBarData( theWindow );
+		
+		KillControls( theWindow );
+		DisposeWindow( theWindow );
+	}
+}
+
+
+#pragma mark -
+#pragma mark === INIT FLOATING WINDOW DATA
+
+//FloatingWindowData„ÇíÊñ∞„Åó„Åè‰Ωú„Çã
+mtFWDataPtr priNewFloatData( void )
+{
+	mtFWDataPtr		fwindowData = new mtFloatData;
+	
+	if( fwindowData != nil )
+	{
+		WindowPtr	floatWindow = mtGetFirstFloatWindow();
+		
+		fwindowData->floatingKind = floatKind;
+		fwindowData->userRefCon = 0;
+		fwindowData->floatNumber = 1;	//FloatingWindow„ÅÆÁï™Âè∑
+		fwindowData->osEvtShowFlag = true;//OSEventÊôÇ„Å´Ë°®Á§∫„ÉªÈùûË°®Á§∫„ÅÆ„Éï„É©„Ç∞
+		
+		while( floatWindow != nil )	//„Éï„É≠„Éº„ÉÜ„Ç£„É≥„Ç∞„Ç¶„Ç£„É≥„Éâ„Ç¶„ÅåNULL„Åß„ÅØÁÑ°„ÅÑÈñì
+		{
+			fwindowData->floatNumber++;		//FloatingWindow„ÅÆÁï™Âè∑„Çí‰ªò„Åë„Çã
+			floatWindow = mtGetNextFloatWindow( floatWindow );
+		}
+	}
+	
+	return( fwindowData );
+}
+
+#pragma mark -
+#pragma mark === NEW FLOATING WINDOW
+//procID„ÅåFloatingWindow„ÅÆprocID„Åã„Çí„ÉÅ„Çß„ÉÉ„ÇØ
+Boolean priIsFWindowProcID( const short procID )
+{
+	Boolean		isFloatID = false;
+	
+	const short floatProcIDs[24] = {
+
+		floatProc,
+		floatGrowProc,
+		floatZoomProc,
+		floatZoomGrowProc,
+		floatSideProc,
+		floatSideGrowProc,
+		floatSideZoomProc,
+		floatSideZoomGrowProc,
+
+		/* Proc IDs for top title bar theme-savvy floating windows */
+		kWindowFloatProc,
+		kWindowFloatGrowProc,
+		kWindowFloatVertZoomProc,
+		kWindowFloatVertZoomGrowProc,
+		kWindowFloatHorizZoomProc,
+		kWindowFloatHorizZoomGrowProc,
+		kWindowFloatFullZoomProc,
+		kWindowFloatFullZoomGrowProc,
+	
+		/* Proc IDs for side title bar theme-savvy floating windows */
+		kWindowFloatSideProc,
+		kWindowFloatSideGrowProc,
+		kWindowFloatSideVertZoomProc,
+		kWindowFloatSideVertZoomGrowProc,
+		kWindowFloatSideHorizZoomProc,
+		kWindowFloatSideHorizZoomGrowProc,
+		kWindowFloatSideFullZoomProc,
+		kWindowFloatSideFullZoomGrowProc
+	};
+	
+	for( int i = 0; i < 24; i++ )
+	{
+		if( floatProcIDs[i] == procID )
+		{
+			isFloatID = true;
+			break;
+		}
+	}
+	return( isFloatID );
+}
+
+//PortRect„ÅÆ„ÉÅ„Çß„ÉÉ„ÇØ
+void priCheckWindowRect( WindowPtr theWindow, Rect maxSize )
+{
+	short		sysWidth = GetWidth( qd.screenBits.bounds );
+	short		sysHeight = GetHeight( qd.screenBits.bounds );
+	short		maxWidth = GetWidth( maxSize );
+	short		maxHeight = GetHeight( maxSize );
+	short		width = GetWidth( theWindow->portRect );
+	short		height = GetHeight( theWindow->portRect );
+	short		aWidth = width;
+	short		aHeight = height;
+	
+	if( width > maxWidth )
+	{
+		aWidth = maxWidth;
+		if( sysWidth < aWidth ){		aWidth = sysWidth;		}
+	}
+	if( height > maxHeight )
+	{
+		aHeight = maxHeight;
+		if( sysHeight < aHeight ){		aHeight = sysHeight;		}
+	}
+	
+	SizeWindow( theWindow, aWidth, aHeight, false );
+}
+
+//„Ç¶„Ç£„É≥„Éâ„Ç¶„Éª„Éï„É≠„Éº„ÉÜ„Ç£„É≥„Ç∞„Ç¶„Ç£„É≥„Éâ„Ç¶„ÅÆ‰ΩúÊàê„Å®refCon„ÅÆË®≠ÂÆö
+WindowPtr mtNewWindow( short procID, Rect winRect, Boolean closeBox, Str255 title, const Rect windowMaxSize, Boolean visible )
+{
+	WindowPtr	theWindow = nil;
+	WindowPtr	activeWindow = mtGetActiveDocWindow();
+	
+	theWindow = NewCWindow( nil, &winRect, title, visible, procID,
+								kLastWindowOfClass, closeBox, 0 );
+
+	if( theWindow != nil )
+	{
+		priSettingWindowData( priIsFWindowProcID( procID ), theWindow );
+		if( EmptyRect( &windowMaxSize ) == false )
+		{
+			priCheckWindowRect( theWindow, windowMaxSize );
+			SetWindowStandardState( theWindow, &windowMaxSize );	//„Ç∫„Éº„É†„Çµ„Ç§„Ç∫„ÇíË®≠ÂÆö
+		}
+	}
+	
+	return( theWindow );
+}
+
+//„Ç¶„Ç£„É≥„Éâ„Ç¶„Éª„Éï„É≠„Éº„ÉÜ„Ç£„É≥„Ç∞„Ç¶„Ç£„É≥„Éâ„Ç¶„ÅÆ„É™„ÇΩ„Éº„Çπ„Åã„Çâ„ÅÆ‰ΩúÊàê„Å®refCon„ÅÆË®≠ÂÆö
+WindowPtr mtGetNewWindow( short resourceID, const Rect windowMaxSize, Boolean isFloat )
+{
+	WindowPtr	theWindow = nil;
+	RectPtr		windowRect = nil;
+	
+	theWindow = GetNewCWindow( resourceID, nil, kLastWindowOfClass );
+
+	if( theWindow != nil )
+	{
+		priSettingWindowData( isFloat, theWindow );
+		
+		if( EmptyRect( &windowMaxSize ) == false )
+		{
+			priCheckWindowRect( theWindow, windowMaxSize );
+			SetWindowStandardState( theWindow, &windowMaxSize );	//ÊúÄÂ§ß„Ç∫„Éº„É†„Çµ„Ç§„Ç∫„ÇíË®≠ÂÆö
+		}
+	}
+	
+	return( theWindow );
+}
+
+void priSettingWindowData( Boolean isFloatWindow, WindowPtr theWindow )
+{
+	if( isFloatWindow )
+	{
+		mtFWDataPtr	fwindowData = priNewFloatData();
+		
+		if( fwindowData != nil )
+		{
+			if( MacIsWindowVisible( theWindow ) == false )
+			{
+				fwindowData->osEvtShowFlag = false;//OSEventÊôÇ„Å´Ë°®Á§∫„ÉªÈùûË°®Á§∫„ÅÆ„Éï„É©„Ç∞
+			}
+			SetWRefCon( theWindow, (long)fwindowData );
+			SetPort( theWindow );
+			TextSize( 9 );
+			priBringFWindow();
+		}
+		else{		DisposeWindow( theWindow );		}
+	}
+	else
+	{
+		priChangeDocWindow( theWindow );	//„Ç¢„ÇØ„ÉÜ„Ç£„Éñ„Å†„Å£„Åü„Ç¶„Ç£„É≥„Éâ„Ç¶„ÅÆ„Éè„Ç§„É©„Ç§„Éà„ÇíÊ∂à„Åô
+	}
+}
+
+
+/***************************************************************/
+
+#pragma mark -
+#pragma mark === UPDATE FLOATING WINDOW
+/***************************„Ç¢„ÉÉ„Éó„Éá„Éº„ÉàÂá¶ÁêÜ**************************/
+//„Ç¢„ÉÉ„Éó„Éá„Éº„ÉàÂá¶ÁêÜ„ÅÆÊôÇ„Å´Âëº„Å∂
+Boolean mtUpdateIsFWindow( WindowPtr theWindow, UpDateRoutine userRoutine )
+{
+	Boolean		yes_no = false;		//true = „Éï„É≠„Éº„ÉÜ„Ç£„É≥„Ç∞„Ç¶„Ç£„É≥„Éâ„Ç¶„ÅÆ„Ç¢„ÉÉ„Éó„Éá„Éº„Éà
+
+	if( priIsFloatWindow( theWindow ) )
+	{
+		yes_no = true;
+		
+		SetPort( theWindow );
+	
+		BeginUpdate( theWindow );
+
+			//FloatingWindow„ÅÆUpdateÂá¶ÁêÜ„ÅÆUserRoutine
+			if( userRoutine != nil ){	userRoutine( theWindow );	}
+			else{		UpdateControls( theWindow, theWindow->visRgn );	}
+	
+		EndUpdate( theWindow );
+	}
+	
+	return( yes_no );
+}
+
+/******************************************************************/

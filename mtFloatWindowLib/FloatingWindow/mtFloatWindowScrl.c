@@ -1,1 +1,602 @@
-#ifndef		____MTFLOATWINDOW____#include"mtFloatWindow.h"#endif#include"mtFloatWindowPri.h"#pragma mark - CREATE ÅE DISPOSE SCROLL BAR//WindowÇ…ScrollBarÇÇ¬ÇØÇÈControlHandle mtNewStandardScrollBar( WindowPtr theWindow, Boolean visible,								const short height, const short width, const short scrlBarKind ){	ControlHandle	scrllBar = nil;	short		growIconWidth = 0;		growIconWidth = mtGetWindowFeatureRgnWidth( theWindow, kWindowGrowRgn, nil );		//theWindowÇ™nilÇ≈ÇÕñ≥Ç≠ÇƒGrowIconÇ™theWindowÇÃïtÇ¢ÇƒÇ¢ÇÈÇ»ÇÁ	if( theWindow != nil and growIconWidth != 0 )	{		Rect				ctrlRect = theWindow->portRect;		Rect				theWindowMaxSize = mtGetWindowMaxPortRect( theWindow );	//theWindowÇÃç≈ëÂÉTÉCÉY		short			min = 0;		short			max = 0;		unsigned short		value = 0;		short			size = growIconWidth + 2;		if( scrlBarKind == vScrl )	//êÇíº		{			value = ctrlRect.top;			if( ctrlRect.top < 0 ){	value = 0;		}						max = theWindowMaxSize.bottom - theWindow->portRect.bottom;						ctrlRect.top = -1 + height + ctrlRect.top;			ctrlRect.left = ctrlRect.right - size + 1;			ctrlRect.right = ctrlRect.left + size;			ctrlRect.bottom -= growIconWidth;		}		if( scrlBarKind == hScrl )	//Å@êÖïΩ		{			value = ctrlRect.left;			if( ctrlRect.left < 0 ){	value = 0;		}						max = theWindowMaxSize.right - theWindow->portRect.right;			ctrlRect.top = ctrlRect.bottom - size + 1;			ctrlRect.left = -1 + width + ctrlRect.left;			ctrlRect.right -= growIconWidth;			ctrlRect.bottom = ctrlRect.top + size;		}		scrllBar = NewControl( theWindow, &ctrlRect, "\p", visible, value, min, max, kControlScrollBarProc, 0 );	}	return( scrllBar );}//theWindowÇ…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[ÇÃDisposevoid mtDisposeScrllBarData( WindowPtr theWindow ){	if( theWindow != nil )	{		mtScrlUnitPtr		scrlData = nil;		ControlHandle		theScrl = nil;		Size				size = 0;				theScrl = priGetStandardScrlBar( theWindow, theWindow->portRect, vScrl );		if( theScrl != nil )		//âEÇ…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[		{			scrlData = (mtScrlUnitPtr)GetControlReference( theScrl );			size = GetPtrSize( (Ptr)scrlData );						if( size > 0 )			{				delete	scrlData;			}		}				theScrl = priGetStandardScrlBar( theWindow, theWindow->portRect, hScrl );		if( theScrl != nil )		//â∫Ç…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[		{			scrlData = (mtScrlUnitPtr)GetControlReference( theScrl );			size = GetPtrSize( (Ptr)scrlData );						if( size > 0 )			{				delete	scrlData;			}		}	}}#pragma mark -#pragma mark === GET SET mtWindowScrlUnit//theScrlÇÃÉXÉNÉçÅ[ÉãÇÃéÌóﬁÇÃéÊìæshort mtGetScrlMoveKind( ControlHandle theScrl ){	short	result = 0;		if( theScrl != nil )	{		result = ((mtScrlUnitPtr)GetControlReference( theScrl ))->moveKind;	}		return( result );}//theScrlÇÃÉXÉNÉçÅ[ÉãÇÃRectÇÃéÊìæRect priGetScrlRect( ControlHandle theScrl ){	Rect		result = { 0 };		if( theScrl != nil )	{		result = ((mtScrlUnitPtr)GetControlReference( theScrl ))->scrlRect;	}		return( result );}//theScrlÇÃÉXÉNÉçÅ[ÉãÇÃRectÇÃê›íËvoid priSetScrlRect( ControlHandle theScrl, Rect scrlRect ){	if( theScrl != nil )	{		((mtScrlUnitPtr)GetControlReference( theScrl ))->scrlRect = scrlRect;	}}//theScrlÇÃÉXÉNÉçÅ[ÉãéûÇÃíPà Ç∆éÌóﬁÇÃê›íËvoid mtSetScrlUnit( ControlHandle theScrl, short unit, short oneUnit, short moveKind, UpdateRoutine userRoutine ){	if( theScrl != nil )	{		mtScrlUnitPtr	 scrlData = new mtWindowScrlUnit;				if( theScrl != nil )		{			scrlData->unit = unit;			scrlData->onePageUnit = oneUnit;			scrlData->moveKind = moveKind;			scrlData->userRoutine = userRoutine;			scrlData->refCon = 0;						priSetScrlBarMax( theScrl, *scrlData );						priSetWindowScrlUnit( theScrl, scrlData );		}	}}//theScrlÇÃmtWindowScrlUnitÇÇÃReConÇ…ê›íËvoid priSetWindowScrlUnit( ControlHandle theScrl, mtScrlUnitPtr scrlData  ){	if( theScrl != nil )	{		SetControlReference( theScrl, (long)scrlData );	}}//theScrlÇÃÉXÉNÉçÅ[ÉãéûÇÃíPà Ç∆éÌóﬁÇÃéÊìæmtWindowScrlUnit mtGetWindowScrlUnit( ControlHandle theScrl ){	mtScrlUnitPtr	result = { 0 };		if( theScrl != nil )	{		result = (mtScrlUnitPtr)GetControlReference( theScrl );	}		return( *result );}#pragma mark -#pragma mark === WINDOW SCROLL//theWindowÇÃScroll(å¥ì_ÇÃà⁄ìÆ)void mtScrollWindow( WindowPtr theWindow, short vValue, short hValue ){	if( theWindow != nil )	{		WindowPtr	savePort = nil;		Rect			oldPortRect = theWindow->portRect;		Rect			portRect = theWindow->portRect;		short		left = portRect.left + hValue;		short		top = portRect.top + vValue;		short		kind = 0;		GetPort( &savePort );		SetPort( theWindow );				SetOrigin( left, top );			SetPort( savePort );						if( vValue != 0 ){	kind = vScrl;	}		else if( hValue != 0 ){	kind = hScrl;	}				if( kind != 0 )		{			priMoveScrlBar( theWindow, theWindow->portRect, oldPortRect, kind );		}	}}//ScrollBarÇÃTrackingshort mtTrackWindowScrlBar( ControlHandle theCtrl, Point clickPt,						ControlPartCode thePart, Rect clipArea,						ControlActionUPP userAction ){	short			moveValue = 0;	ControlActionUPP	scrollAction = nil;		if( userAction != nil ){		scrollAction = userAction;	}	else{		scrollAction = NewControlActionProc( priScrollWindowAction );	}		if( theCtrl != nil )	{		WindowPtr			theWindow = ( *theCtrl )->contrlOwner;		short				ctrlValue = GetControlValue( theCtrl );		short				vMove = 0;		short				hMove = 0;		mtWindowScrlUnit		scrlData = mtGetWindowScrlUnit( theCtrl );				//theScrlÇÃÉXÉNÉçÅ[ÉãÇÃRectÇÃê›íË		priSetScrlRect( theCtrl, clipArea );				SetPort( theWindow );				if( thePart == kControlIndicatorPart )		{			TrackControl( theCtrl, clickPt, nil );			moveValue = GetControlValue( theCtrl );						if( moveValue != ctrlValue )			{				if( scrlData.unit > 0 )				{					moveValue = short( moveValue / scrlData.unit ) * scrlData.unit;				}								SetControlValue( theCtrl, moveValue );			}						if( scrlData.moveKind == vScrl ){	vMove = moveValue = moveValue - ctrlValue;	}			else if( scrlData.moveKind == hScrl ){	hMove = moveValue = moveValue - ctrlValue;	}						if( moveValue != 0 )			{				Rect		portRect = theWindow->portRect;				Rect		scrlArea = scrlData.scrlRect;	//theScrlÇÃÉXÉNÉçÅ[ÉãÇÃRectÇÃéÊìæ				Rect		saveClip = mtGetClipRect( theWindow );							//Ç‹Ç∏ÅAscrlAreaÇÃç∂è„ÇportRectÇÃç∂è„Ç…çáÇÌÇπÇÈ				OffsetRect( &scrlArea, portRect.left - scrlArea.left, portRect.top - scrlArea.top );				//scrlAreaÇìÆÇ©Ç∑ï™ÇæÇØêÊÇ…à⁄ìÆÇ≥ÇπÇƒÇ®Ç≠				OffsetRect( &scrlArea, hMove, vMove );				//ÇªÇÃãÈå`ÇÉNÉäÉbÉv				ClipRect( &scrlArea );								mtScrollWindow( theWindow, vMove, hMove );				if( scrlData.userRoutine != nil )				{					scrlData.userRoutine( theWindow, nil );				}				ClipRect( &saveClip );			}					}		else		{			TrackControl( theCtrl, clickPt, scrollAction );							if( scrlData.moveKind == vScrl )			{				moveValue = vMove = GetControlValue( theCtrl ) - ctrlValue;			}			else if( scrlData.moveKind == hScrl )			{				moveValue = hMove = GetControlValue( theCtrl ) - ctrlValue;			}		}	}	if( scrollAction != nil ){	DisposeRoutineDescriptor( scrollAction );	}		return( moveValue );}//theWindowÇÃÉXÉNÉçÅ[ÉãÉAÉNÉVÉáÉìUPPvoid priScrollWindowAction( ControlHandle theCtrl, ControlPartCode thePart ){	WindowPtr	theWindow = (*theCtrl)->contrlOwner;		if( theWindow != nil )	{		SetPort( theWindow );				mtWindowScrlUnit	scrlData = mtGetWindowScrlUnit( theCtrl );		const short		ctrlValue = GetControlValue( theCtrl );		short			moveValue = 0;		Rect				portRect = theWindow->portRect;		short			moveKind = scrlData.moveKind;		short			unit = scrlData.unit;		short			oneUnit = scrlData.onePageUnit;				switch( thePart )		{			case( kControlUpButtonPart ) :				moveValue = -unit;			break;						case( kControlDownButtonPart ) :				moveValue = unit;			break;						case( kControlPageUpPart ) :				moveValue = -oneUnit;			break;						case( kControlPageDownPart ) :				moveValue = oneUnit;			break;		};				SetControlValue( theCtrl, ctrlValue + moveValue );				short		maxValue = GetControlMaximum( theCtrl );			if( ( ctrlValue == 0 and moveValue < 0 ) or			( ctrlValue == maxValue and moveValue > 0 )		   )		{			moveValue = 0;			}				if( moveValue != 0 )		{			short		vValue = 0;			short		hValue = 0;			Rect			scrlArea = scrlData.scrlRect;	//theScrlÇÃÉXÉNÉçÅ[ÉãÇÃRectÇÃéÊìæ			Rect			saveClip = mtGetClipRect( theWindow );			RgnHandle		upRgn = nil;						if( moveKind == vScrl ){		vValue = moveValue;	}			else if( moveKind == hScrl ){	hValue = moveValue;	}			//Ç‹Ç∏ÅAscrlAreaÇÃç∂è„ÇportRectÇÃç∂è„Ç…çáÇÌÇπÇÈ			OffsetRect( &scrlArea, portRect.left - scrlArea.left, portRect.top - scrlArea.top );			//scrlAreaÇìÆÇ©Ç∑ï™ÇæÇØêÊÇ…à⁄ìÆÇ≥ÇπÇƒÇ®Ç≠			OffsetRect( &scrlArea, hValue, vValue );			//ÇªÇÃãÈå`ÇÉNÉäÉbÉv			ClipRect( &scrlArea );			//ÉXÉNÉçÅ[ÉãÇ≥ÇπÇÈ			mtScrollWindow( theWindow, vValue, hValue );			ScrollRect( &scrlArea, -hValue, -vValue, upRgn );						if( scrlData.userRoutine != nil ){	scrlData.userRoutine( theWindow, upRgn );		}			ClipRect( &saveClip );		}	}}#pragma mark -#pragma mark === SCROLLBAR IMAGING//ïWèÄScrollBar( âEïîÅEâ∫ïî )ÇÃï`âÊvoid mtDrawScrlBar( WindowPtr theWindow ){	if( theWindow != nil )	{		ControlHandle		scrlBar = nil;				scrlBar = priGetStandardScrlBar( theWindow, theWindow->portRect, vScrl );		if( scrlBar != nil )		//âEÇ…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[		{			Draw1Control( scrlBar );		}				scrlBar = priGetStandardScrlBar( theWindow, theWindow->portRect, hScrl );		if( scrlBar != nil )		//â∫Ç…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[		{			Draw1Control( scrlBar );		}	}}#pragma mark -#pragma mark === SCROLLBAR CHANGE SIZE & POSITION//ïWèÄScrollBar( âEïîÅEâ∫ïî )ÇÃControlHandleÇìæÇÈControlHandle priGetStandardScrlBar( WindowPtr theWindow, Rect oldPortRect, short kind ){	ControlHandle		theScrl = nil;		if( theWindow != nil )	{		Point			testPt;		short			growIconSize = mtGetWindowFeatureRgnWidth( theWindow, kWindowGrowRgn, nil ) + 5;		ControlPartCode	thePart = 0;				if( kind == vScrl )		{			testPt.h = oldPortRect.right;			testPt.v = oldPortRect.bottom - growIconSize;		}		if( kind == hScrl )		{			testPt.h = oldPortRect.right - growIconSize;			testPt.v = oldPortRect.bottom;		}				theScrl = FindControlUnderMouse( testPt, theWindow, &thePart );				if( theScrl != nil )		{			if( mtGetScrlMoveKind( theScrl ) != kind )			{				theScrl = nil;			}		}	}		return( theScrl );}//ControlÇÃà íuÇ∆ÉTÉCÉYÇêVÇµÇ¢Rect(winRect == theWindow->PortRect)Ç…çáÇÌÇπÇÈvoid priMoveSizeScrlBar( ControlHandle theScrl, Rect winRect, Rect oldPortRect,							short growIconSize ){	if( theScrl != nil )	{		short	moveV = 0;		short	moveH = 0;		short	width = 0;		short	height = 0;		short	kind = mtGetScrlMoveKind( theScrl );		short	topMove = winRect.top - oldPortRect.top;		short	leftMove = winRect.left - oldPortRect.left;		Rect		ctrlRect = (*theScrl)->contrlRect;						if( kind == vScrl )		{			//ControlÇÃïù			width = ctrlRect.right - ctrlRect.left;						//ControlÇÃà⁄ìÆ			moveV = ctrlRect.top + topMove;			moveH = winRect.right - width + 1;			MoveControl( theScrl, moveH, moveV );						//ControlkçÇÇ≥( theWindowÇÃBottomÇ©ÇÁÉRÉìÉgÉçÅ[ÉãÇÃTopÇ∆GrowIconÇÃïùÇÃï™ÇæÇØà¯Ç≠ )			height = winRect.bottom - moveV  - growIconSize;			SizeControl( theScrl, width, height );		}		else if( kind == hScrl )		{			//ControlÇÃïù			height = ctrlRect.bottom - ctrlRect.top;						//ControlÇÃà⁄ìÆ			moveV = winRect.bottom - height + 1;			moveH = ctrlRect.left + leftMove;			MoveControl( theScrl, moveH, moveV );						//ControlkçÇÇ≥( theWindowÇÃBottomÇ©ÇÁÉRÉìÉgÉçÅ[ÉãÇÃTopÇ∆GrowIconÇÃïùÇÃï™ÇæÇØà¯Ç≠ )			width = winRect.right - moveH - growIconSize;			SizeControl( theScrl, width, height );		}	}}//ïWèÄScrollBar( âEïîÅEâ∫ïî )ÇÃà⁄ìÆÇ∆ÉTÉCÉYïœçXvoid priStandardMoveScrlBar( WindowPtr theWindow, Rect oldPortRect ){	short	growIconSize = mtGetWindowFeatureRgnWidth( theWindow, kWindowGrowRgn, nil );		if( theWindow != nil and growIconSize != 0 )	{		Rect				maxSize = mtGetWindowMaxPortRect( theWindow );		Rect				winRect = theWindow->portRect;		ControlHandle		scrlBar = nil;		mtWindowScrlUnit	scrlData = { 0 };		short			maxValue = 0;		Rect				ctrlRect = { 0 };				scrlBar = priGetStandardScrlBar( theWindow, oldPortRect, vScrl );				if( scrlBar != nil )		//âEÇ…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[		{			scrlData = mtGetWindowScrlUnit( scrlBar );						priMoveSizeScrlBar( scrlBar, winRect, oldPortRect, growIconSize );						priSetScrlBarMax( scrlBar, scrlData );		}						scrlBar = priGetStandardScrlBar( theWindow, oldPortRect, hScrl );		if( scrlBar != nil )		//â∫Ç…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[		{			scrlData = mtGetWindowScrlUnit( scrlBar );						priMoveSizeScrlBar( scrlBar, winRect, oldPortRect, growIconSize );						priSetScrlBarMax( scrlBar, scrlData );		}	}}//ïWèÄScrollBar( âEïîÅEâ∫ïî )ÇÃMaxValueÇÃïœçXvoid priSetScrlBarMax( ControlHandle theScrl, mtWindowScrlUnit scrlData ){	if( theScrl != nil )		//âEÇ…ê›íËÇ≥ÇÍÇƒÇ¢ÇÈÉXÉNÉçÅ[ÉãÉoÅ[	{		WindowPtr	theWindow = ( *theScrl )->contrlOwner;		short	growIconSize = mtGetWindowFeatureRgnWidth( theWindow, kWindowGrowRgn, nil );			if( theWindow != nil and growIconSize != 0 )		{			Rect				maxSize = mtGetWindowMaxPortRect( theWindow );			Rect				winRect = theWindow->portRect;			short			maxValue = 0;			Rect				ctrlRect = (*theScrl)->contrlRect;									if( scrlData.moveKind == vScrl )			{				short	ctrlHeight = ctrlRect.top - winRect.top;				short	height = winRect.bottom - winRect.top;				short	maxHeight = ( maxSize.bottom - maxSize.top ) - ctrlHeight - growIconSize;				short	dive = maxHeight % scrlData.unit;							maxValue = short( maxHeight / scrlData.unit ) * scrlData.unit + ctrlHeight - height + growIconSize + dive;							SetControlMaximum( theScrl, maxValue );			}			else if( scrlData.moveKind == hScrl )			{				short	ctrlWidth = ctrlRect.left - winRect.left;				short	width = winRect.right - winRect.left;				short	maxWidth = ( maxSize.right - maxSize.left ) - ctrlWidth - growIconSize;				short	dive = maxWidth % scrlData.unit;							maxValue = short( maxWidth / scrlData.unit ) * scrlData.unit + ctrlWidth - width + growIconSize + dive;							SetControlMaximum( theScrl, maxValue );			}		}	}}//ControlÇÃà íuÇêVÇµÇ¢Rect(winRect == theWindow->PortRect)Ç…çáÇÌÇπÇÈvoid priMoveScrlBar( WindowPtr theWindow, Rect winRect, Rect oldPortRect, short kind ){	ControlHandle		theScrlRight = priGetStandardScrlBar( theWindow, oldPortRect, vScrl );	ControlHandle		theScrlBottom = priGetStandardScrlBar( theWindow, oldPortRect, hScrl );		if( theScrlRight != nil and theScrlBottom != nil )	{		short	topMove = winRect.top - oldPortRect.top;		short	leftMove = winRect.left - oldPortRect.left;		Rect		rightRect = (*theScrlRight)->contrlRect;		Rect		bottomRect = (*theScrlBottom)->contrlRect;		EraseRect( &rightRect );		EraseRect( &bottomRect );				if( kind == vScrl )		{						//ControlÇÃà⁄ìÆ right			OffsetRect( &rightRect, 0, topMove );			(*theScrlRight)->contrlRect = rightRect;						//ControlÇÃà⁄ìÆ bottom			OffsetRect( &bottomRect, 0, topMove );			(*theScrlBottom)->contrlRect = bottomRect;		}		else if( kind == hScrl )		{			//ControlÇÃà⁄ìÆ right			OffsetRect( &rightRect, leftMove, 0 );			(*theScrlRight)->contrlRect = rightRect;						//ControlÇÃà⁄ìÆ bottom			OffsetRect( &bottomRect, leftMove, 0 );			(*theScrlBottom)->contrlRect = bottomRect;		}	}}
+#ifndef		____MTFLOATWINDOW____
+#include"mtFloatWindow.h"
+#endif
+
+#include"mtFloatWindowPri.h"
+
+#pragma mark - CREATE „Éª DISPOSE SCROLL BAR
+
+
+//Window„Å´ScrollBar„Çí„Å§„Åë„Çã
+ControlHandle mtNewStandardScrollBar( WindowPtr theWindow, Boolean visible,
+								const short height, const short width, const short scrlBarKind )
+{
+	ControlHandle	scrllBar = nil;
+	short		growIconWidth = 0;
+	
+	growIconWidth = mtGetWindowFeatureRgnWidth( theWindow, kWindowGrowRgn, nil );
+	
+	//theWindow„Åånil„Åß„ÅØÁÑ°„Åè„Å¶GrowIcon„ÅåtheWindow„ÅÆ‰ªò„ÅÑ„Å¶„ÅÑ„Çã„Å™„Çâ
+	if( theWindow != nil and growIconWidth != 0 )
+	{
+		Rect				ctrlRect = theWindow->portRect;
+		Rect				theWindowMaxSize = mtGetWindowMaxPortRect( theWindow );	//theWindow„ÅÆÊúÄÂ§ß„Çµ„Ç§„Ç∫
+		short			min = 0;
+		short			max = 0;
+		unsigned short		value = 0;
+		short			size = growIconWidth + 2;
+
+		if( scrlBarKind == vScrl )	//ÂûÇÁõ¥
+		{
+			value = ctrlRect.top;
+			if( ctrlRect.top < 0 ){	value = 0;		}
+			
+			max = theWindowMaxSize.bottom - theWindow->portRect.bottom;
+			
+			ctrlRect.top = -1 + height + ctrlRect.top;
+			ctrlRect.left = ctrlRect.right - size + 1;
+			ctrlRect.right = ctrlRect.left + size;
+			ctrlRect.bottom -= growIconWidth;
+		}
+		if( scrlBarKind == hScrl )	//„ÄÄÊ∞¥Âπ≥
+		{
+			value = ctrlRect.left;
+			if( ctrlRect.left < 0 ){	value = 0;		}
+			
+			max = theWindowMaxSize.right - theWindow->portRect.right;
+
+			ctrlRect.top = ctrlRect.bottom - size + 1;
+			ctrlRect.left = -1 + width + ctrlRect.left;
+			ctrlRect.right -= growIconWidth;
+			ctrlRect.bottom = ctrlRect.top + size;
+		}
+		scrllBar = NewControl( theWindow, &ctrlRect, "\p", visible, value, min, max, kControlScrollBarProc, 0 );
+	}
+	return( scrllBar );
+}
+
+//theWindow„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº„ÅÆDispose
+void mtDisposeScrllBarData( WindowPtr theWindow )
+{
+	if( theWindow != nil )
+	{
+		mtScrlUnitPtr		scrlData = nil;
+		ControlHandle		theScrl = nil;
+		Size				size = 0;
+		
+		theScrl = priGetStandardScrlBar( theWindow, theWindow->portRect, vScrl );
+		if( theScrl != nil )		//Âè≥„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº
+		{
+			scrlData = (mtScrlUnitPtr)GetControlReference( theScrl );
+			size = GetPtrSize( (Ptr)scrlData );
+			
+			if( size > 0 )
+			{
+				delete	scrlData;
+			}
+		}
+		
+		theScrl = priGetStandardScrlBar( theWindow, theWindow->portRect, hScrl );
+		if( theScrl != nil )		//‰∏ã„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº
+		{
+			scrlData = (mtScrlUnitPtr)GetControlReference( theScrl );
+			size = GetPtrSize( (Ptr)scrlData );
+			
+			if( size > 0 )
+			{
+				delete	scrlData;
+			}
+		}
+	}
+}
+
+#pragma mark -
+#pragma mark === GET SET mtWindowScrlUnit
+
+//theScrl„ÅÆ„Çπ„ÇØ„É≠„Éº„É´„ÅÆÁ®ÆÈ°û„ÅÆÂèñÂæó
+short mtGetScrlMoveKind( ControlHandle theScrl )
+{
+	short	result = 0;
+	
+	if( theScrl != nil )
+	{
+		result = ((mtScrlUnitPtr)GetControlReference( theScrl ))->moveKind;
+	}
+	
+	return( result );
+}
+
+//theScrl„ÅÆ„Çπ„ÇØ„É≠„Éº„É´„ÅÆRect„ÅÆÂèñÂæó
+Rect priGetScrlRect( ControlHandle theScrl )
+{
+	Rect		result = { 0 };
+	
+	if( theScrl != nil )
+	{
+		result = ((mtScrlUnitPtr)GetControlReference( theScrl ))->scrlRect;
+	}
+	
+	return( result );
+}
+
+//theScrl„ÅÆ„Çπ„ÇØ„É≠„Éº„É´„ÅÆRect„ÅÆË®≠ÂÆö
+void priSetScrlRect( ControlHandle theScrl, Rect scrlRect )
+{
+	if( theScrl != nil )
+	{
+		((mtScrlUnitPtr)GetControlReference( theScrl ))->scrlRect = scrlRect;
+	}
+}
+
+
+//theScrl„ÅÆ„Çπ„ÇØ„É≠„Éº„É´ÊôÇ„ÅÆÂçò‰Ωç„Å®Á®ÆÈ°û„ÅÆË®≠ÂÆö
+void mtSetScrlUnit( ControlHandle theScrl, short unit, short oneUnit, short moveKind, UpdateRoutine userRoutine )
+{
+	if( theScrl != nil )
+	{
+		mtScrlUnitPtr	 scrlData = new mtWindowScrlUnit;
+		
+		if( theScrl != nil )
+		{
+			scrlData->unit = unit;
+			scrlData->onePageUnit = oneUnit;
+			scrlData->moveKind = moveKind;
+			scrlData->userRoutine = userRoutine;
+			scrlData->refCon = 0;
+			
+			priSetScrlBarMax( theScrl, *scrlData );
+			
+			priSetWindowScrlUnit( theScrl, scrlData );
+		}
+	}
+}
+
+//theScrl„ÅÆmtWindowScrlUnit„Çí„ÅÆReCon„Å´Ë®≠ÂÆö
+void priSetWindowScrlUnit( ControlHandle theScrl, mtScrlUnitPtr scrlData  )
+{
+	if( theScrl != nil )
+	{
+		SetControlReference( theScrl, (long)scrlData );
+	}
+}
+
+//theScrl„ÅÆ„Çπ„ÇØ„É≠„Éº„É´ÊôÇ„ÅÆÂçò‰Ωç„Å®Á®ÆÈ°û„ÅÆÂèñÂæó
+mtWindowScrlUnit mtGetWindowScrlUnit( ControlHandle theScrl )
+{
+	mtScrlUnitPtr	result = { 0 };
+	
+	if( theScrl != nil )
+	{
+		result = (mtScrlUnitPtr)GetControlReference( theScrl );
+	}
+	
+	return( *result );
+}
+
+#pragma mark -
+#pragma mark === WINDOW SCROLL
+
+//theWindow„ÅÆScroll(ÂéüÁÇπ„ÅÆÁßªÂãï)
+void mtScrollWindow( WindowPtr theWindow, short vValue, short hValue )
+{
+	if( theWindow != nil )
+	{
+		WindowPtr	savePort = nil;
+		Rect			oldPortRect = theWindow->portRect;
+		Rect			portRect = theWindow->portRect;
+		short		left = portRect.left + hValue;
+		short		top = portRect.top + vValue;
+		short		kind = 0;
+
+		GetPort( &savePort );
+		SetPort( theWindow );
+		
+		SetOrigin( left, top );
+	
+		SetPort( savePort );
+				
+		if( vValue != 0 ){	kind = vScrl;	}
+		else if( hValue != 0 ){	kind = hScrl;	}
+		
+		if( kind != 0 )
+		{
+			priMoveScrlBar( theWindow, theWindow->portRect, oldPortRect, kind );
+		}
+	}
+}
+
+//ScrollBar„ÅÆTracking
+short mtTrackWindowScrlBar( ControlHandle theCtrl, Point clickPt,
+						ControlPartCode thePart, Rect clipArea,
+						ControlActionUPP userAction )
+{
+	short			moveValue = 0;
+	ControlActionUPP	scrollAction = nil;
+	
+	if( userAction != nil ){		scrollAction = userAction;	}
+	else{		scrollAction = NewControlActionProc( priScrollWindowAction );	}
+	
+	if( theCtrl != nil )
+	{
+		WindowPtr			theWindow = ( *theCtrl )->contrlOwner;
+		short				ctrlValue = GetControlValue( theCtrl );
+		short				vMove = 0;
+		short				hMove = 0;
+		mtWindowScrlUnit		scrlData = mtGetWindowScrlUnit( theCtrl );
+		
+		//theScrl„ÅÆ„Çπ„ÇØ„É≠„Éº„É´„ÅÆRect„ÅÆË®≠ÂÆö
+		priSetScrlRect( theCtrl, clipArea );
+		
+		SetPort( theWindow );
+		
+		if( thePart == kControlIndicatorPart )
+		{
+			TrackControl( theCtrl, clickPt, nil );
+
+			moveValue = GetControlValue( theCtrl );
+			
+			if( moveValue != ctrlValue )
+			{
+				if( scrlData.unit > 0 )
+				{
+					moveValue = short( moveValue / scrlData.unit ) * scrlData.unit;
+				}
+				
+				SetControlValue( theCtrl, moveValue );
+			}
+			
+			if( scrlData.moveKind == vScrl ){	vMove = moveValue = moveValue - ctrlValue;	}
+			else if( scrlData.moveKind == hScrl ){	hMove = moveValue = moveValue - ctrlValue;	}
+			
+			if( moveValue != 0 )
+			{
+				Rect		portRect = theWindow->portRect;
+				Rect		scrlArea = scrlData.scrlRect;	//theScrl„ÅÆ„Çπ„ÇØ„É≠„Éº„É´„ÅÆRect„ÅÆÂèñÂæó
+				Rect		saveClip = mtGetClipRect( theWindow );
+			
+				//„Åæ„Åö„ÄÅscrlArea„ÅÆÂ∑¶‰∏ä„ÇíportRect„ÅÆÂ∑¶‰∏ä„Å´Âêà„Çè„Åõ„Çã
+				OffsetRect( &scrlArea, portRect.left - scrlArea.left, portRect.top - scrlArea.top );
+				//scrlArea„ÇíÂãï„Åã„ÅôÂàÜ„Å†„ÅëÂÖà„Å´ÁßªÂãï„Åï„Åõ„Å¶„Åä„Åè
+				OffsetRect( &scrlArea, hMove, vMove );
+				//„Åù„ÅÆÁü©ÂΩ¢„Çí„ÇØ„É™„ÉÉ„Éó
+				ClipRect( &scrlArea );
+				
+				mtScrollWindow( theWindow, vMove, hMove );
+				if( scrlData.userRoutine != nil )
+				{
+					scrlData.userRoutine( theWindow, nil );
+				}
+				ClipRect( &saveClip );
+			}
+			
+		}
+		else
+		{
+			TrackControl( theCtrl, clickPt, scrollAction );	
+			
+			if( scrlData.moveKind == vScrl )
+			{
+				moveValue = vMove = GetControlValue( theCtrl ) - ctrlValue;
+			}
+			else if( scrlData.moveKind == hScrl )
+			{
+				moveValue = hMove = GetControlValue( theCtrl ) - ctrlValue;
+			}
+		}
+	}
+	if( scrollAction != nil ){	DisposeRoutineDescriptor( scrollAction );	}
+	
+	return( moveValue );
+}
+
+//theWindow„ÅÆ„Çπ„ÇØ„É≠„Éº„É´„Ç¢„ÇØ„Ç∑„Éß„É≥UPP
+void priScrollWindowAction( ControlHandle theCtrl, ControlPartCode thePart )
+{
+	WindowPtr	theWindow = (*theCtrl)->contrlOwner;
+	
+	if( theWindow != nil )
+	{
+		SetPort( theWindow );
+		
+		mtWindowScrlUnit	scrlData = mtGetWindowScrlUnit( theCtrl );
+		const short		ctrlValue = GetControlValue( theCtrl );
+		short			moveValue = 0;
+		Rect				portRect = theWindow->portRect;
+		short			moveKind = scrlData.moveKind;
+		short			unit = scrlData.unit;
+		short			oneUnit = scrlData.onePageUnit;
+
+		
+		switch( thePart )
+		{
+			case( kControlUpButtonPart ) :
+				moveValue = -unit;
+			break;
+			
+			case( kControlDownButtonPart ) :
+				moveValue = unit;
+			break;
+			
+			case( kControlPageUpPart ) :
+				moveValue = -oneUnit;
+			break;
+			
+			case( kControlPageDownPart ) :
+				moveValue = oneUnit;
+			break;
+
+		};
+		
+		SetControlValue( theCtrl, ctrlValue + moveValue );
+		
+		short		maxValue = GetControlMaximum( theCtrl );
+	
+		if( ( ctrlValue == 0 and moveValue < 0 ) or
+			( ctrlValue == maxValue and moveValue > 0 )
+		   )
+		{
+			moveValue = 0;	
+		}
+		
+		if( moveValue != 0 )
+		{
+			short		vValue = 0;
+			short		hValue = 0;
+			Rect			scrlArea = scrlData.scrlRect;	//theScrl„ÅÆ„Çπ„ÇØ„É≠„Éº„É´„ÅÆRect„ÅÆÂèñÂæó
+			Rect			saveClip = mtGetClipRect( theWindow );
+			RgnHandle		upRgn = nil;
+			
+			if( moveKind == vScrl ){		vValue = moveValue;	}
+			else if( moveKind == hScrl ){	hValue = moveValue;	}
+
+			//„Åæ„Åö„ÄÅscrlArea„ÅÆÂ∑¶‰∏ä„ÇíportRect„ÅÆÂ∑¶‰∏ä„Å´Âêà„Çè„Åõ„Çã
+			OffsetRect( &scrlArea, portRect.left - scrlArea.left, portRect.top - scrlArea.top );
+			//scrlArea„ÇíÂãï„Åã„ÅôÂàÜ„Å†„ÅëÂÖà„Å´ÁßªÂãï„Åï„Åõ„Å¶„Åä„Åè
+			OffsetRect( &scrlArea, hValue, vValue );
+			//„Åù„ÅÆÁü©ÂΩ¢„Çí„ÇØ„É™„ÉÉ„Éó
+			ClipRect( &scrlArea );
+			//„Çπ„ÇØ„É≠„Éº„É´„Åï„Åõ„Çã
+			mtScrollWindow( theWindow, vValue, hValue );
+			ScrollRect( &scrlArea, -hValue, -vValue, upRgn );
+			
+			if( scrlData.userRoutine != nil ){	scrlData.userRoutine( theWindow, upRgn );		}
+			ClipRect( &saveClip );
+		}
+	}
+}
+
+
+#pragma mark -
+#pragma mark === SCROLLBAR IMAGING
+
+//Ê®ôÊ∫ñScrollBar( Âè≥ÈÉ®„Éª‰∏ãÈÉ® )„ÅÆÊèèÁîª
+void mtDrawScrlBar( WindowPtr theWindow )
+{
+	if( theWindow != nil )
+	{
+		ControlHandle		scrlBar = nil;
+		
+		scrlBar = priGetStandardScrlBar( theWindow, theWindow->portRect, vScrl );
+		if( scrlBar != nil )		//Âè≥„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº
+		{
+			Draw1Control( scrlBar );
+		}
+		
+		scrlBar = priGetStandardScrlBar( theWindow, theWindow->portRect, hScrl );
+		if( scrlBar != nil )		//‰∏ã„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº
+		{
+			Draw1Control( scrlBar );
+		}
+	}
+}
+
+
+#pragma mark -
+#pragma mark === SCROLLBAR CHANGE SIZE & POSITION
+
+//Ê®ôÊ∫ñScrollBar( Âè≥ÈÉ®„Éª‰∏ãÈÉ® )„ÅÆControlHandle„ÇíÂæó„Çã
+ControlHandle priGetStandardScrlBar( WindowPtr theWindow, Rect oldPortRect, short kind )
+{
+	ControlHandle		theScrl = nil;
+	
+	if( theWindow != nil )
+	{
+		Point			testPt;
+		short			growIconSize = mtGetWindowFeatureRgnWidth( theWindow, kWindowGrowRgn, nil ) + 5;
+		ControlPartCode	thePart = 0;
+		
+		if( kind == vScrl )
+		{
+			testPt.h = oldPortRect.right;
+			testPt.v = oldPortRect.bottom - growIconSize;
+		}
+		if( kind == hScrl )
+		{
+			testPt.h = oldPortRect.right - growIconSize;
+			testPt.v = oldPortRect.bottom;
+		}
+		
+		theScrl = FindControlUnderMouse( testPt, theWindow, &thePart );
+		
+		if( theScrl != nil )
+		{
+			if( mtGetScrlMoveKind( theScrl ) != kind )
+			{
+				theScrl = nil;
+			}
+		}
+	}
+	
+	return( theScrl );
+}
+
+
+
+//Control„ÅÆ‰ΩçÁΩÆ„Å®„Çµ„Ç§„Ç∫„ÇíÊñ∞„Åó„ÅÑRect(winRect == theWindow->PortRect)„Å´Âêà„Çè„Åõ„Çã
+void priMoveSizeScrlBar( ControlHandle theScrl, Rect winRect, Rect oldPortRect,
+							short growIconSize )
+{
+	if( theScrl != nil )
+	{
+		short	moveV = 0;
+		short	moveH = 0;
+		short	width = 0;
+		short	height = 0;
+		short	kind = mtGetScrlMoveKind( theScrl );
+		short	topMove = winRect.top - oldPortRect.top;
+		short	leftMove = winRect.left - oldPortRect.left;
+		Rect		ctrlRect = (*theScrl)->contrlRect;
+		
+		
+		if( kind == vScrl )
+		{
+			//Control„ÅÆÂπÖ
+			width = ctrlRect.right - ctrlRect.left;
+			
+			//Control„ÅÆÁßªÂãï
+			moveV = ctrlRect.top + topMove;
+			moveH = winRect.right - width + 1;
+			MoveControl( theScrl, moveH, moveV );
+			
+			//ControlkÈ´ò„Åï( theWindow„ÅÆBottom„Åã„Çâ„Ç≥„É≥„Éà„É≠„Éº„É´„ÅÆTop„Å®GrowIcon„ÅÆÂπÖ„ÅÆÂàÜ„Å†„ÅëÂºï„Åè )
+			height = winRect.bottom - moveV  - growIconSize;
+			SizeControl( theScrl, width, height );
+		}
+		else if( kind == hScrl )
+		{
+			//Control„ÅÆÂπÖ
+			height = ctrlRect.bottom - ctrlRect.top;
+			
+			//Control„ÅÆÁßªÂãï
+			moveV = winRect.bottom - height + 1;
+			moveH = ctrlRect.left + leftMove;
+			MoveControl( theScrl, moveH, moveV );
+			
+			//ControlkÈ´ò„Åï( theWindow„ÅÆBottom„Åã„Çâ„Ç≥„É≥„Éà„É≠„Éº„É´„ÅÆTop„Å®GrowIcon„ÅÆÂπÖ„ÅÆÂàÜ„Å†„ÅëÂºï„Åè )
+			width = winRect.right - moveH - growIconSize;
+			SizeControl( theScrl, width, height );
+		}
+	}
+}
+
+//Ê®ôÊ∫ñScrollBar( Âè≥ÈÉ®„Éª‰∏ãÈÉ® )„ÅÆÁßªÂãï„Å®„Çµ„Ç§„Ç∫Â§âÊõ¥
+void priStandardMoveScrlBar( WindowPtr theWindow, Rect oldPortRect )
+{
+	short	growIconSize = mtGetWindowFeatureRgnWidth( theWindow, kWindowGrowRgn, nil );
+	
+	if( theWindow != nil and growIconSize != 0 )
+	{
+		Rect				maxSize = mtGetWindowMaxPortRect( theWindow );
+		Rect				winRect = theWindow->portRect;
+		ControlHandle		scrlBar = nil;
+		mtWindowScrlUnit	scrlData = { 0 };
+		short			maxValue = 0;
+		Rect				ctrlRect = { 0 };
+		
+		scrlBar = priGetStandardScrlBar( theWindow, oldPortRect, vScrl );
+		
+		if( scrlBar != nil )		//Âè≥„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº
+		{
+			scrlData = mtGetWindowScrlUnit( scrlBar );
+			
+			priMoveSizeScrlBar( scrlBar, winRect, oldPortRect, growIconSize );
+			
+			priSetScrlBarMax( scrlBar, scrlData );
+		}
+		
+		
+		scrlBar = priGetStandardScrlBar( theWindow, oldPortRect, hScrl );
+
+		if( scrlBar != nil )		//‰∏ã„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº
+		{
+			scrlData = mtGetWindowScrlUnit( scrlBar );
+			
+			priMoveSizeScrlBar( scrlBar, winRect, oldPortRect, growIconSize );
+			
+			priSetScrlBarMax( scrlBar, scrlData );
+		}
+	}
+}
+
+
+//Ê®ôÊ∫ñScrollBar( Âè≥ÈÉ®„Éª‰∏ãÈÉ® )„ÅÆMaxValue„ÅÆÂ§âÊõ¥
+void priSetScrlBarMax( ControlHandle theScrl, mtWindowScrlUnit scrlData )
+{
+	if( theScrl != nil )		//Âè≥„Å´Ë®≠ÂÆö„Åï„Çå„Å¶„ÅÑ„Çã„Çπ„ÇØ„É≠„Éº„É´„Éê„Éº
+	{
+		WindowPtr	theWindow = ( *theScrl )->contrlOwner;
+		short	growIconSize = mtGetWindowFeatureRgnWidth( theWindow, kWindowGrowRgn, nil );
+	
+		if( theWindow != nil and growIconSize != 0 )
+		{
+			Rect				maxSize = mtGetWindowMaxPortRect( theWindow );
+			Rect				winRect = theWindow->portRect;
+			short			maxValue = 0;
+			Rect				ctrlRect = (*theScrl)->contrlRect;
+			
+			
+			if( scrlData.moveKind == vScrl )
+			{
+				short	ctrlHeight = ctrlRect.top - winRect.top;
+				short	height = winRect.bottom - winRect.top;
+				short	maxHeight = ( maxSize.bottom - maxSize.top ) - ctrlHeight - growIconSize;
+				short	dive = maxHeight % scrlData.unit;
+			
+				maxValue = short( maxHeight / scrlData.unit ) * scrlData.unit + ctrlHeight - height + growIconSize + dive;
+			
+				SetControlMaximum( theScrl, maxValue );
+			}
+			else if( scrlData.moveKind == hScrl )
+			{
+				short	ctrlWidth = ctrlRect.left - winRect.left;
+				short	width = winRect.right - winRect.left;
+				short	maxWidth = ( maxSize.right - maxSize.left ) - ctrlWidth - growIconSize;
+				short	dive = maxWidth % scrlData.unit;
+			
+				maxValue = short( maxWidth / scrlData.unit ) * scrlData.unit + ctrlWidth - width + growIconSize + dive;
+			
+				SetControlMaximum( theScrl, maxValue );
+			}
+		}
+	}
+}
+
+//Control„ÅÆ‰ΩçÁΩÆ„ÇíÊñ∞„Åó„ÅÑRect(winRect == theWindow->PortRect)„Å´Âêà„Çè„Åõ„Çã
+void priMoveScrlBar( WindowPtr theWindow, Rect winRect, Rect oldPortRect, short kind )
+{
+	ControlHandle		theScrlRight = priGetStandardScrlBar( theWindow, oldPortRect, vScrl );
+	ControlHandle		theScrlBottom = priGetStandardScrlBar( theWindow, oldPortRect, hScrl );
+	
+	if( theScrlRight != nil and theScrlBottom != nil )
+	{
+		short	topMove = winRect.top - oldPortRect.top;
+		short	leftMove = winRect.left - oldPortRect.left;
+		Rect		rightRect = (*theScrlRight)->contrlRect;
+		Rect		bottomRect = (*theScrlBottom)->contrlRect;
+
+		EraseRect( &rightRect );
+		EraseRect( &bottomRect );
+		
+		if( kind == vScrl )
+		{
+			
+			//Control„ÅÆÁßªÂãï right
+			OffsetRect( &rightRect, 0, topMove );
+			(*theScrlRight)->contrlRect = rightRect;
+			
+			//Control„ÅÆÁßªÂãï bottom
+			OffsetRect( &bottomRect, 0, topMove );
+			(*theScrlBottom)->contrlRect = bottomRect;
+		}
+		else if( kind == hScrl )
+		{
+			//Control„ÅÆÁßªÂãï right
+			OffsetRect( &rightRect, leftMove, 0 );
+			(*theScrlRight)->contrlRect = rightRect;
+			
+			//Control„ÅÆÁßªÂãï bottom
+			OffsetRect( &bottomRect, leftMove, 0 );
+			(*theScrlBottom)->contrlRect = bottomRect;
+		}
+	}
+}

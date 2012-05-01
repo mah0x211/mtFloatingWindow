@@ -1,1 +1,481 @@
-#ifndef		____MTFLOATWINDOW____#include"mtFloatWindow.h"#endif#include"mtFloatWindowPri.h"		#pragma mark === WINDOW ACTIVATEEDEACTIVATE//Window‚ÌActivateEDeactivateˆ—void mtActiveDeactiveWindow( Boolean active_deactive, Boolean isOSEvt ){	WindowPtr	theWindow = mtGetActiveDocWindow();	FlushEvents( everyEvent, 0 );		if( mtGetFirstFloatWindow() != nil )		//FloatingWindow‚ª‚ ‚ê‚Î	{		//active_deactive = true ‚È‚ç Active		//Activate		if( active_deactive){	priActivateWindow( isOSEvt );		}		//Deactivate		else{		priDeactivateWindow( isOSEvt );	}	}		if( theWindow != nil )	{		mtActivateDeactivateCtrl( theWindow, active_deactive );		HiliteWindow( theWindow, active_deactive );		InvalRgn( theWindow->visRgn );	}	}//ActivateWindowˆ—void priActivateWindow( Boolean isOSEvt ){	WindowPtr	theWindow = mtGetFirstFloatWindow();	//ˆê”Ô‘O‚É•\¦‚³‚ê‚Ä‚¢‚éFloatingWindow‚ğ“¾‚é		while( theWindow != nil )	{		if( isOSEvt )		{			if( priIsFloatOSShowFlag( theWindow ) and MacIsWindowVisible( theWindow ) == false )			{				ShowHide( theWindow, true );			}		}				if( isOSEvt == false )		{			if( MacIsWindowVisible( theWindow ) )			{				priActivateCtrl( theWindow );	//OSEvent‚Å‚ÍWindow‚ğ‰B‚·‚©‚çControl‚ÌActivate‚Í•K—v–³‚¢				InvalRgn( theWindow->visRgn );			}		}				if( MacIsWindowVisible( theWindow ) and IsWindowHilited( theWindow ) == false )		{			HiliteWindow( theWindow, true );		}				theWindow = mtGetNextFloatWindow( theWindow );	}}//Deactivateˆ—void priDeactivateWindow( Boolean isOSEvt ){	WindowPtr	theWindow = mtGetFirstFloatWindow();		while( theWindow != nil )	{		if( isOSEvt and MacIsWindowVisible( theWindow ) )		{			ShowHide( theWindow, false );		}				if( isOSEvt == false )		{			if( MacIsWindowVisible( theWindow ) )			{				priDeactivateCtrl( theWindow );	//OSEvent‚Å‚ÍWindow‚ğ‰B‚·‚©‚çControl‚ÌActivate‚Í•K—v–³‚¢				InvalRgn( theWindow->visRgn );				if( IsWindowHilited( theWindow ) ){	HiliteWindow( theWindow, false );	}			}		}				theWindow = mtGetNextFloatWindow( theWindow );	}}#pragma mark -#pragma mark === FLOATING WINDOW MOUSE EVENT//FloatingWindow‹y‚ÑDocWindow‚ğƒCƒxƒ“ƒgˆ—short mtMouseEventFloat( WindowPtr theWindow, short thePart, Point clickPt,									GoAwayRoutine goAwayRoutine,									GetZoomGrowSizeData zoom_growSize ){	if( theWindow != nil )	{		Boolean		clickFWindow = priIsClickFWindow( theWindow );		switch ( thePart )		{			case( inContent ) :				//click‚µ‚½‚Ì‚ªFloatingWindow‚È‚ç				if( clickFWindow ){	thePart = inFloatContent;		}				else				{					if( theWindow != mtGetActiveDocWindow() )					{						priChangeDocWindow( theWindow );						thePart = inDeactiveWindow;					}				}			break;					case( inDrag ) :				thePart = inNoWindow;				//click‚µ‚½‚Ì‚ªFloatingWindow‚È‚ç				if( clickFWindow ){		priClickFWDrag( theWindow, clickPt );	}//FloatingWindow‚ÌDrag				else				{					//DocWindow‚ÌDrag					if( theWindow != mtGetActiveDocWindow() )					{						priChangeDocWindow( theWindow );						thePart = inDeactiveWindow;					}					priDragDocWindow( theWindow, clickPt );				}			break;					case( inGrow ) :				thePart = inNoWindow;				if( clickFWindow ){	priFWindowGrow( theWindow, clickPt );	}				else				{	if( theWindow != mtGetActiveDocWindow() )					{						priChangeDocWindow( theWindow );						thePart = inDeactiveWindow;					}					priWindowGrow( theWindow, clickPt, zoom_growSize );				}			break;					case( inZoomIn ) :			case( inZoomOut ) :				short savePart = thePart;				if( clickFWindow == false )				{					if( theWindow != mtGetActiveDocWindow() )					{						priChangeDocWindow( theWindow );						thePart = inDeactiveWindow;					}				}				priWindowZoom( theWindow, savePart, clickPt );			break;						case( inGoAway ) :				priWindowGoAway( theWindow, clickPt, goAwayRoutine );				thePart = inNoWindow;			break;		};	}	return( thePart );}/****************ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚ÌƒCƒxƒ“ƒgˆ—†Ò*********************///ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚Ìƒhƒ‰ƒbƒOˆ—void priClickFWDrag( WindowPtr window, Point mouse ){	Rect		Area = qd.screenBits.bounds;	//ƒOƒ[ƒoƒ‹À•W‚ÌRect‚ğArea‚É‚¢‚ê‚é		InsetRect( &Area, 4, 4 );				//Area‚ÌcE‰¡‚Ì’l‚ğ4ƒsƒNƒZƒ‹‚¸‚Âk‚ß‚é	DragWindow( window, mouse, &Area );	if( priIsFloatWindow( window ) )	{		window = GetNextWindow( window );		//‚P‚ÂŒã‚ë‚ÌƒEƒBƒ“ƒhƒE‚ğ“¾‚é		if( window != nil and MacIsWindowVisible( window ) )		//•\¦‚³‚ê‚Ä‚¢‚é‚È‚ç		{			HiliteWindow( window, true );		}	}}//ƒEƒBƒ“ƒhƒEEgoAwayƒ{ƒbƒNƒXˆ—void priWindowGoAway( WindowPtr theWindow, Point clickPt, GoAwayRoutine userRoutine ){	short	thePart = inGoAway;	Boolean	goAwayFlag = false;			goAwayFlag = TrackGoAway( theWindow, clickPt );	if( priIsClickFWindow( theWindow ) )	{		thePart = inFloatGoAway;		if( userRoutine != nil ){	userRoutine( thePart, goAwayFlag, theWindow );	}	}	else	{		Boolean	isGoAway = false;				//theWindow‚ÌŸ‚ÌWindow‚Ö‚Ìƒ|ƒCƒ“ƒ^‚ğ“¾‚é		WindowPtr	nextActiveWindow = GetNextWindow( theWindow );		if( userRoutine != nil ){	isGoAway = userRoutine( thePart, goAwayFlag, theWindow );		}		//nextActiveWindow‚ªnil‚Å‚Í–³‚­AtheWindow‚ğ•Â‚¶‚½‚È‚ç		if( nextActiveWindow != nil and isGoAway )		{			//nextActiveWindow‚ğƒAƒNƒeƒBƒu•\¦‚É‚·‚é			HiliteWindow( nextActiveWindow, true );			mtActiveDeactiveWindow( true, false );		}	}}//ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒEEƒTƒCƒYˆ—void priFWindowGrow( WindowPtr theWindow, Point clickPt ){	long			afterSize = 0;	//ƒTƒCƒY•ÏXŒã‚Ì‚‚³E‰¡•	Rect			theWindowMaxSize = mtGetWindowMaxPortRect( theWindow );	//theWindow‚ÌÅ‘åƒTƒCƒY	Rect			oldPortRect = theWindow->portRect;	Rect			portRect = theWindow->portRect;	RgnHandle		updateRgn = NewRgn();			DiffRgn( theWindow->visRgn, theWindow->clipRgn, updateRgn );		theWindowMaxSize.bottom = theWindowMaxSize.bottom - theWindowMaxSize.top + 1;	theWindowMaxSize.right = theWindowMaxSize.right - theWindowMaxSize.left + 1;		theWindowMaxSize.top = 30;	theWindowMaxSize.left = 30;			//ƒTƒCƒY‚É•ÏX‚ª–³‚¯‚ê‚Î0‚ª“ü‚é	afterSize = GrowWindow( theWindow, clickPt, &theWindowMaxSize );	if( afterSize != 0 )	{		short	afterWidth = LoWord( afterSize );		short	afterHeight = HiWord( afterSize );				SizeWindow( theWindow, afterWidth, afterHeight, true );				priStandardMoveScrlBar( theWindow, oldPortRect );				InvalRgn( updateRgn );	}	DisposeRgn( updateRgn );}//ƒEƒBƒ“ƒhƒEEƒTƒCƒYˆ—void priWindowGrow( WindowPtr theWindow, Point clickPt,					GetZoomGrowSizeData zoom_growSize ){	long			afterSize = 0;	//ƒTƒCƒY•ÏXŒã‚Ì‚‚³E‰¡•	Rect			theWindowMaxSize = mtGetWindowMaxPortRect( theWindow );	//theWindow‚ÌÅ‘åƒTƒCƒY	Rect			oldPortRect = theWindow->portRect;	Rect			portRect = theWindow->portRect;	RgnHandle		updateRgn = NewRgn();	mtWindowSizeData		sizeData = { 0 };		if( zoom_growSize != nil ){		sizeData = zoom_growSize();		}		DiffRgn( theWindow->visRgn, theWindow->clipRgn, updateRgn );		theWindowMaxSize.top = sizeData.minHeight;	theWindowMaxSize.left = sizeData.minWidth;		theWindowMaxSize.bottom = theWindowMaxSize.bottom - portRect.top + 1;	theWindowMaxSize.right = theWindowMaxSize.right - portRect.left + 1;		//ƒTƒCƒY‚É•ÏX‚ª–³‚¯‚ê‚Î0‚ª“ü‚é	afterSize = GrowWindow( theWindow, clickPt, &theWindowMaxSize );	if( afterSize != 0 )	{		short	afterWidth = LoWord( afterSize );		short	afterHeight = HiWord( afterSize );				short	widthValue = 1;		short	heightValue = 1;				if( sizeData.widthSize.left > 0 )		{			widthValue = afterWidth / sizeData.widthSize.left;		}		if( sizeData.widthSize.top > 0 )		{			heightValue = afterHeight / sizeData.widthSize.top;		}				afterWidth = sizeData.widthSize.left * widthValue + sizeData.widthSize.right;		afterHeight = sizeData.widthSize.top * heightValue + sizeData.widthSize.bottom;				SizeWindow( theWindow, afterWidth, afterHeight, true );				priStandardMoveScrlBar( theWindow, oldPortRect );				InvalRgn( updateRgn );	}	DisposeRgn( updateRgn );}/*****************@–â‘è‰ÓŠ		*****************///ƒEƒBƒ“ƒhƒEEƒY[ƒ€ƒ{ƒbƒNƒXˆ—void priWindowZoom( WindowPtr theWindow, short partCode, Point clickPt ){	Boolean		click = false;	Rect			sysRect = qd.screenBits.bounds;	//Å‘åEÅ¬ƒTƒCƒY	Rect			maxSize = { 0 };	Rect			oldPortRect = theWindow->portRect;	Rect			strucRect = mtGetWindowStrucRect( theWindow );	short		afterWidth = GetWidth( oldPortRect );	short		afterHeight = GetHeight( oldPortRect );		GetWindowStandardState( theWindow, &maxSize );			sysRect.top += 40;	sysRect.left += 5;	sysRect.right -= 5;	sysRect.bottom -= 5;	SetPort( theWindow );	click = TrackBox( theWindow, clickPt, partCode );	if( click == true )	{		Rect		secondSize = { 0 };				GetWindowUserState( theWindow, &secondSize );				afterWidth += GetWidth( maxSize ) - oldPortRect.right;		afterHeight += GetHeight( maxSize ) - oldPortRect.bottom;				EraseRect( &theWindow->portRect );//EraseRect‚ğ‚µ‚È‚¢‚ÆƒXƒNƒ[ƒ‹ƒo[‚Ìü‚ªÁ‚³‚ê‚È‚¢		if( ( afterWidth + strucRect.left + 17 ) > sysRect.right )		{			afterWidth -= ( afterWidth + strucRect.left ) -  sysRect.right + 25;		}		if( ( afterHeight + strucRect.top + 17 ) > sysRect.bottom )		{			afterHeight -= ( afterHeight + strucRect.top ) - sysRect.bottom + 25;		}						if( GetWidth( strucRect ) == afterWidth + 6 + 7 and			GetHeight( strucRect ) == afterHeight + 22 + 7 )		{			SizeWindow( theWindow, GetWidth( secondSize ),						GetHeight( secondSize ), true );		}		else		{			SetWindowUserState( theWindow, &strucRect );			SizeWindow( theWindow, afterWidth, afterHeight, true );		}				/****/	/** ZoomWindow( theWindow, partCode, false );//true‚È‚ç‚»‚ÌƒEƒBƒ“ƒhƒE‚ğƒAƒNƒeƒBƒu‚É‚·‚é		/****/				priStandardMoveScrlBar( theWindow, oldPortRect );	}}#pragma mark -#pragma mark === DOCWINDOW DRAG ROUTINE//•W€ƒEƒBƒ“ƒhƒE‚Ìƒhƒ‰ƒbƒOˆ—void priDragDocWindow( WindowPtr window, Point mouse ){	GrafPtr		systemPort = nil;				//‰æ–Ê‘S‘Ì( OS‚Ì‰æ–Ê )	RgnHandle		saveSystemClip = NewRgn();		//systemPort‚ÌƒNƒŠƒbƒv—Ìˆæ‚ÌŠm•Û—p	Rect			moveArea = qd.screenBits.bounds;	//ƒ}ƒEƒX‚ÌˆÚ“®”ÍˆÍ	RgnHandle		newSystemClip = NewRgn();		//systemPort‚ÌV‚µ‚¢ƒNƒŠƒbƒv—Ìˆæ	RgnHandle		dragRgn = NewRgn();				//ƒEƒBƒ“ƒhƒE‚Ì˜g‚Ì—Ìˆæ	long			afterDragArea = 0;	WindowPtr	floatWindow = mtGetFirstFloatWindow();	InsetRect( &moveArea, 4, 4 );		//moveArea‚ÌcE‰¡‚Ì’l‚ğ4ƒsƒNƒZƒ‹‚¸‚Âk‚ß‚é	GetWMgrPort( &systemPort );		//ƒVƒXƒeƒ€ƒ|[ƒg‚ğæ‚èo‚·	SetPort( systemPort );			//ƒVƒXƒeƒ€ƒ|[ƒg‚ğƒJƒŒƒ“ƒgƒ|[ƒg‚Éİ’è	GetClip( saveSystemClip );		//ƒVƒXƒeƒ€ƒ|[ƒg‚ÌƒNƒŠƒbƒv—Ìˆæ‚ğæ‚èo‚µ‚Ä•Û‘¶			//ƒEƒBƒ“ƒhƒE‚Ì˜g‚Ì—Ìˆæ‚ğ“¾‚é	GetWindowStructureRgn( window, dragRgn );	CopyRgn( GetGrayRgn(), newSystemClip );		/**************************************************************/	//ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚Ì˜g‚Ì•”•ª‚ğˆø‚­	if( floatWindow != nil )	{		do		{			if( MacIsWindowVisible( floatWindow ) )			{				DiffRgn( newSystemClip, mtShowWindowStrucRgn( floatWindow ), newSystemClip );			}		}while( nil != ( floatWindow = mtGetNextFloatWindow( floatWindow )));	}		/**************************************************************/	SetClip( newSystemClip );		//ƒNƒŠƒbƒsƒ“ƒO‚·‚é	DisposeRgn( newSystemClip );		//‚à‚¤‚¢‚ç‚È‚¢‚Ì‚Å”jŠü		//ƒhƒ‰ƒbƒO’†‚ğ¦‚·“_ü‚ğ•\¦	afterDragArea = DragGrayRgn( dragRgn, mouse, &moveArea, &moveArea, noConstraint, 0 );	SetClip( saveSystemClip );		//ƒNƒŠƒbƒv—Ìˆæ‚ğŒ³‚É–ß‚·	DisposeRgn( saveSystemClip );		//‚à‚¤‚¢‚ç‚È‚¢‚Ì‚Å”jŠü	//ƒ}ƒEƒX‚ªw’è‚µ‚½—ÌˆæEmoveAreaE‚©‚ç‚Í‚İo‚Ä‚¢‚È‚¯‚ê‚Î	if( afterDragArea != kMouseUpOutOfSlop )		{		Rect		contentRect;		//ƒEƒBƒ“ƒhƒE‚ÌContentRgn“¾‚½Œã‚ÉcontentRect‚É‘ã“ü		GetWindowRegion( window, kWindowContentRgn, dragRgn );		contentRect = (*dragRgn)->rgnBBox;		mouse.v = HiWord(afterDragArea);		mouse.h = LoWord(afterDragArea);		mouse.v += contentRect.top;		mouse.h += contentRect.left;		MoveWindow( window, mouse.h, mouse.v, false );	}	DisposeRgn( dragRgn );	SetPort( floatWindow );}//•W€ƒEƒBƒ“ƒhƒE‚ÌƒAƒNƒeƒBƒuƒEƒBƒ“ƒhƒE‚ÌŒğ‘Övoid priChangeDocWindow( WindowPtr theWindow ){	if( theWindow != nil )	{		if( IsWindowHilited( theWindow ) == false )		{			HiliteWindow( theWindow, true );		//ƒAƒNƒeƒBƒu•\¦‚É‚·‚é		}				WindowPtr	activeWindow = mtGetActiveDocWindow();				if( activeWindow != nil )		{			if( theWindow != activeWindow )			{				HiliteWindow( activeWindow, false );	//ƒAƒNƒeƒBƒu‚¾‚Á‚½ƒEƒBƒ“ƒhƒE‚ÌƒnƒCƒ‰ƒCƒg‚ğÁ‚·								BringToFront( theWindow );			//ƒEƒBƒ“ƒhƒE‚ğ‘O‚É‚Á‚Ä‚­‚é				mtActivateDeactivateCtrl( theWindow, true );	//ƒEƒBƒ“ƒhƒE‚ÌƒRƒ“ƒgƒ[ƒ‹‚ğƒAƒNƒeƒBƒu•\¦‚É				priBringFWindow();								mtActivateDeactivateCtrl( activeWindow, false );	//ƒAƒNƒeƒBƒu‚¾‚Á‚½ƒEƒBƒ“ƒhƒE‚ÌƒRƒ“ƒgƒ[ƒ‹‚ğƒfƒBƒAƒNƒeƒBƒu•\¦‚É			}		}	}}/**********************ƒAƒCƒRƒ“ƒEƒBƒ“ƒhƒE‚ğƒNƒŠƒbƒN†Ò************************//********************ƒtƒ[ƒeƒBƒ“ƒOƒEƒBƒ“ƒhƒE‚ÌƒCƒxƒ“ƒgˆ—†Ñ********************/
+#ifndef		____MTFLOATWINDOW____
+#include"mtFloatWindow.h"
+#endif
+
+#include"mtFloatWindowPri.h"
+		
+#pragma mark === WINDOW ACTIVATEãƒ»DEACTIVATE
+
+//Windowã®Activateãƒ»Deactivateå‡¦ç†
+void mtActiveDeactiveWindow( Boolean active_deactive, Boolean isOSEvt )
+{
+	WindowPtr	theWindow = mtGetActiveDocWindow();
+	FlushEvents( everyEvent, 0 );
+	
+	if( mtGetFirstFloatWindow() != nil )		//FloatingWindowãŒã‚ã‚Œã°
+	{
+		//active_deactive = true ãªã‚‰ Active
+		//Activate
+		if( active_deactive){	priActivateWindow( isOSEvt );		}
+		//Deactivate
+		else{		priDeactivateWindow( isOSEvt );	}
+	}
+	
+	if( theWindow != nil )
+	{
+		mtActivateDeactivateCtrl( theWindow, active_deactive );
+		HiliteWindow( theWindow, active_deactive );
+		InvalRgn( theWindow->visRgn );
+	}
+	
+}
+
+//ActivateWindowå‡¦ç†
+void priActivateWindow( Boolean isOSEvt )
+{
+	WindowPtr	theWindow = mtGetFirstFloatWindow();	//ä¸€ç•ªå‰ã«è¡¨ç¤ºã•ã‚Œã¦ã„ã‚‹FloatingWindowã‚’å¾—ã‚‹
+	
+	while( theWindow != nil )
+	{
+		if( isOSEvt )
+		{
+			if( priIsFloatOSShowFlag( theWindow ) and MacIsWindowVisible( theWindow ) == false )
+			{
+				ShowHide( theWindow, true );
+			}
+		}
+		
+		if( isOSEvt == false )
+		{
+			if( MacIsWindowVisible( theWindow ) )
+			{
+				priActivateCtrl( theWindow );	//OSEventã§ã¯Windowã‚’éš ã™ã‹ã‚‰Controlã®Activateã¯å¿…è¦ç„¡ã„
+				InvalRgn( theWindow->visRgn );
+			}
+		}
+		
+		if( MacIsWindowVisible( theWindow ) and IsWindowHilited( theWindow ) == false )
+		{
+			HiliteWindow( theWindow, true );
+		}
+		
+		theWindow = mtGetNextFloatWindow( theWindow );
+	}
+}
+
+//Deactivateå‡¦ç†
+void priDeactivateWindow( Boolean isOSEvt )
+{
+	WindowPtr	theWindow = mtGetFirstFloatWindow();
+	
+	while( theWindow != nil )
+	{
+		if( isOSEvt and MacIsWindowVisible( theWindow ) )
+		{
+			ShowHide( theWindow, false );
+		}
+		
+		if( isOSEvt == false )
+		{
+			if( MacIsWindowVisible( theWindow ) )
+			{
+				priDeactivateCtrl( theWindow );	//OSEventã§ã¯Windowã‚’éš ã™ã‹ã‚‰Controlã®Activateã¯å¿…è¦ç„¡ã„
+				InvalRgn( theWindow->visRgn );
+				if( IsWindowHilited( theWindow ) ){	HiliteWindow( theWindow, false );	}
+			}
+		}
+		
+		theWindow = mtGetNextFloatWindow( theWindow );
+	}
+}
+
+
+
+#pragma mark -
+#pragma mark === FLOATING WINDOW MOUSE EVENT
+//FloatingWindowåŠã³DocWindowã‚’ã‚¤ãƒ™ãƒ³ãƒˆå‡¦ç†
+short mtMouseEventFloat( WindowPtr theWindow, short thePart, Point clickPt,
+									GoAwayRoutine goAwayRoutine,
+									GetZoomGrowSizeData zoom_growSize )
+{
+	if( theWindow != nil )
+	{
+		Boolean		clickFWindow = priIsClickFWindow( theWindow );
+
+		switch ( thePart )
+		{
+			case( inContent ) :
+				//clickã—ãŸã®ãŒFloatingWindowãªã‚‰
+				if( clickFWindow ){	thePart = inFloatContent;		}
+				else
+				{
+					if( theWindow != mtGetActiveDocWindow() )
+					{
+						priChangeDocWindow( theWindow );
+						thePart = inDeactiveWindow;
+					}
+				}
+			break;
+		
+			case( inDrag ) :
+				thePart = inNoWindow;
+				//clickã—ãŸã®ãŒFloatingWindowãªã‚‰
+				if( clickFWindow ){		priClickFWDrag( theWindow, clickPt );	}//FloatingWindowã®Drag
+				else
+				{
+					//DocWindowã®Drag
+					if( theWindow != mtGetActiveDocWindow() )
+					{
+						priChangeDocWindow( theWindow );
+						thePart = inDeactiveWindow;
+					}
+					priDragDocWindow( theWindow, clickPt );
+				}
+			break;
+		
+			case( inGrow ) :
+				thePart = inNoWindow;
+				if( clickFWindow ){	priFWindowGrow( theWindow, clickPt );	}
+				else
+				{	if( theWindow != mtGetActiveDocWindow() )
+					{
+						priChangeDocWindow( theWindow );
+						thePart = inDeactiveWindow;
+					}
+					priWindowGrow( theWindow, clickPt, zoom_growSize );
+				}
+			break;
+		
+			case( inZoomIn ) :
+			case( inZoomOut ) :
+				short savePart = thePart;
+				if( clickFWindow == false )
+				{
+					if( theWindow != mtGetActiveDocWindow() )
+					{
+						priChangeDocWindow( theWindow );
+						thePart = inDeactiveWindow;
+					}
+				}
+				priWindowZoom( theWindow, savePart, clickPt );
+			break;
+			
+			case( inGoAway ) :
+				priWindowGoAway( theWindow, clickPt, goAwayRoutine );
+				thePart = inNoWindow;
+			break;
+		};
+	}
+	return( thePart );
+}
+
+/****************ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¤ãƒ™ãƒ³ãƒˆå‡¦ç†â‡©*********************/
+//ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒ‰ãƒ©ãƒƒã‚°å‡¦ç†
+void priClickFWDrag( WindowPtr window, Point mouse )
+{
+	Rect		Area = qd.screenBits.bounds;	//ã‚°ãƒ­ãƒ¼ãƒãƒ«åº§æ¨™ã®Rectã‚’Areaã«ã„ã‚Œã‚‹
+	
+	InsetRect( &Area, 4, 4 );				//Areaã®ç¸¦ãƒ»æ¨ªã®å€¤ã‚’4ãƒ”ã‚¯ã‚»ãƒ«ãšã¤ç¸®ã‚ã‚‹
+
+	DragWindow( window, mouse, &Area );
+
+	if( priIsFloatWindow( window ) )
+	{
+		window = GetNextWindow( window );		//ï¼‘ã¤å¾Œã‚ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’å¾—ã‚‹
+		if( window != nil and MacIsWindowVisible( window ) )		//è¡¨ç¤ºã•ã‚Œã¦ã„ã‚‹ãªã‚‰
+		{
+			HiliteWindow( window, true );
+		}
+	}
+}
+
+//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»goAwayãƒœãƒƒã‚¯ã‚¹å‡¦ç†
+void priWindowGoAway( WindowPtr theWindow, Point clickPt, GoAwayRoutine userRoutine )
+{
+	short	thePart = inGoAway;
+	Boolean	goAwayFlag = false;
+	
+	
+	goAwayFlag = TrackGoAway( theWindow, clickPt );
+
+	if( priIsClickFWindow( theWindow ) )
+	{
+		thePart = inFloatGoAway;
+		if( userRoutine != nil ){	userRoutine( thePart, goAwayFlag, theWindow );	}
+	}
+	else
+	{
+		Boolean	isGoAway = false;
+		
+		//theWindowã®æ¬¡ã®Windowã¸ã®ãƒã‚¤ãƒ³ã‚¿ã‚’å¾—ã‚‹
+		WindowPtr	nextActiveWindow = GetNextWindow( theWindow );
+
+		if( userRoutine != nil ){	isGoAway = userRoutine( thePart, goAwayFlag, theWindow );		}
+
+		//nextActiveWindowãŒnilã§ã¯ç„¡ãã€theWindowã‚’é–‰ã˜ãŸãªã‚‰
+		if( nextActiveWindow != nil and isGoAway )
+		{
+			//nextActiveWindowã‚’ã‚¢ã‚¯ãƒ†ã‚£ãƒ–è¡¨ç¤ºã«ã™ã‚‹
+			HiliteWindow( nextActiveWindow, true );
+			mtActiveDeactiveWindow( true, false );
+		}
+	}
+}
+
+//ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»ã‚µã‚¤ã‚ºå‡¦ç†
+void priFWindowGrow( WindowPtr theWindow, Point clickPt )
+{
+	long			afterSize = 0;	//ã‚µã‚¤ã‚ºå¤‰æ›´å¾Œã®é«˜ã•ãƒ»æ¨ªå¹…
+	Rect			theWindowMaxSize = mtGetWindowMaxPortRect( theWindow );	//theWindowã®æœ€å¤§ã‚µã‚¤ã‚º
+	Rect			oldPortRect = theWindow->portRect;
+	Rect			portRect = theWindow->portRect;
+	RgnHandle		updateRgn = NewRgn();
+	
+	
+	DiffRgn( theWindow->visRgn, theWindow->clipRgn, updateRgn );
+	
+	theWindowMaxSize.bottom = theWindowMaxSize.bottom - theWindowMaxSize.top + 1;
+	theWindowMaxSize.right = theWindowMaxSize.right - theWindowMaxSize.left + 1;
+	
+	theWindowMaxSize.top = 30;
+	theWindowMaxSize.left = 30;
+	
+	
+	//ã‚µã‚¤ã‚ºã«å¤‰æ›´ãŒç„¡ã‘ã‚Œã°0ãŒå…¥ã‚‹
+	afterSize = GrowWindow( theWindow, clickPt, &theWindowMaxSize );
+
+	if( afterSize != 0 )
+	{
+		short	afterWidth = LoWord( afterSize );
+		short	afterHeight = HiWord( afterSize );
+		
+		SizeWindow( theWindow, afterWidth, afterHeight, true );
+		
+		priStandardMoveScrlBar( theWindow, oldPortRect );
+		
+		InvalRgn( updateRgn );
+	}
+	DisposeRgn( updateRgn );
+}
+
+//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»ã‚µã‚¤ã‚ºå‡¦ç†
+void priWindowGrow( WindowPtr theWindow, Point clickPt,
+					GetZoomGrowSizeData zoom_growSize )
+{
+	long			afterSize = 0;	//ã‚µã‚¤ã‚ºå¤‰æ›´å¾Œã®é«˜ã•ãƒ»æ¨ªå¹…
+	Rect			theWindowMaxSize = mtGetWindowMaxPortRect( theWindow );	//theWindowã®æœ€å¤§ã‚µã‚¤ã‚º
+	Rect			oldPortRect = theWindow->portRect;
+	Rect			portRect = theWindow->portRect;
+	RgnHandle		updateRgn = NewRgn();
+	mtWindowSizeData		sizeData = { 0 };
+	
+	if( zoom_growSize != nil ){		sizeData = zoom_growSize();		}
+	
+	DiffRgn( theWindow->visRgn, theWindow->clipRgn, updateRgn );
+	
+	theWindowMaxSize.top = sizeData.minHeight;
+	theWindowMaxSize.left = sizeData.minWidth;
+	
+	theWindowMaxSize.bottom = theWindowMaxSize.bottom - portRect.top + 1;
+	theWindowMaxSize.right = theWindowMaxSize.right - portRect.left + 1;
+	
+	//ã‚µã‚¤ã‚ºã«å¤‰æ›´ãŒç„¡ã‘ã‚Œã°0ãŒå…¥ã‚‹
+	afterSize = GrowWindow( theWindow, clickPt, &theWindowMaxSize );
+
+	if( afterSize != 0 )
+	{
+		short	afterWidth = LoWord( afterSize );
+		short	afterHeight = HiWord( afterSize );
+		
+		short	widthValue = 1;
+		short	heightValue = 1;
+		
+		if( sizeData.widthSize.left > 0 )
+		{
+			widthValue = afterWidth / sizeData.widthSize.left;
+		}
+		if( sizeData.widthSize.top > 0 )
+		{
+			heightValue = afterHeight / sizeData.widthSize.top;
+		}
+		
+		afterWidth = sizeData.widthSize.left * widthValue + sizeData.widthSize.right;
+		afterHeight = sizeData.widthSize.top * heightValue + sizeData.widthSize.bottom;
+		
+		SizeWindow( theWindow, afterWidth, afterHeight, true );
+		
+		priStandardMoveScrlBar( theWindow, oldPortRect );
+		
+		InvalRgn( updateRgn );
+	}
+	DisposeRgn( updateRgn );
+}
+
+/****************
+*ã€€å•é¡Œç®‡æ‰€		*
+****************/
+//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒ»ã‚ºãƒ¼ãƒ ãƒœãƒƒã‚¯ã‚¹å‡¦ç†
+void priWindowZoom( WindowPtr theWindow, short partCode, Point clickPt )
+{
+	Boolean		click = false;
+	Rect			sysRect = qd.screenBits.bounds;	//æœ€å¤§ãƒ»æœ€å°ã‚µã‚¤ã‚º
+	Rect			maxSize = { 0 };
+	Rect			oldPortRect = theWindow->portRect;
+	Rect			strucRect = mtGetWindowStrucRect( theWindow );
+	short		afterWidth = GetWidth( oldPortRect );
+	short		afterHeight = GetHeight( oldPortRect );
+	
+	GetWindowStandardState( theWindow, &maxSize );
+	
+	
+	sysRect.top += 40;	sysRect.left += 5;
+	sysRect.right -= 5;	sysRect.bottom -= 5;
+
+	SetPort( theWindow );
+	click = TrackBox( theWindow, clickPt, partCode );
+
+	if( click == true )
+	{
+		Rect		secondSize = { 0 };
+		
+		GetWindowUserState( theWindow, &secondSize );
+		
+		afterWidth += GetWidth( maxSize ) - oldPortRect.right;
+		afterHeight += GetHeight( maxSize ) - oldPortRect.bottom;
+		
+		EraseRect( &theWindow->portRect );//EraseRectã‚’ã—ãªã„ã¨ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ã®ç·šãŒæ¶ˆã•ã‚Œãªã„
+
+		if( ( afterWidth + strucRect.left + 17 ) > sysRect.right )
+		{
+			afterWidth -= ( afterWidth + strucRect.left ) -  sysRect.right + 25;
+		}
+		if( ( afterHeight + strucRect.top + 17 ) > sysRect.bottom )
+		{
+			afterHeight -= ( afterHeight + strucRect.top ) - sysRect.bottom + 25;
+		}
+		
+		
+		if( GetWidth( strucRect ) == afterWidth + 6 + 7 and
+			GetHeight( strucRect ) == afterHeight + 22 + 7 )
+		{
+			SizeWindow( theWindow, GetWidth( secondSize ),
+						GetHeight( secondSize ), true );
+		}
+		else
+		{
+			SetWindowUserState( theWindow, &strucRect );
+			SizeWindow( theWindow, afterWidth, afterHeight, true );
+		}
+		
+		/****/
+	/** ZoomWindow( theWindow, partCode, false );//trueãªã‚‰ãã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã«ã™ã‚‹
+		/****/
+		
+		priStandardMoveScrlBar( theWindow, oldPortRect );
+	}
+}
+
+#pragma mark -
+#pragma mark === DOCWINDOW DRAG ROUTINE
+
+//æ¨™æº–ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒ‰ãƒ©ãƒƒã‚°å‡¦ç†
+void priDragDocWindow( WindowPtr window, Point mouse )
+{
+	GrafPtr		systemPort = nil;				//ç”»é¢å…¨ä½“( OSã®ç”»é¢ )
+	RgnHandle		saveSystemClip = NewRgn();		//systemPortã®ã‚¯ãƒªãƒƒãƒ—é ˜åŸŸã®ç¢ºä¿ç”¨
+	Rect			moveArea = qd.screenBits.bounds;	//ãƒã‚¦ã‚¹ã®ç§»å‹•ç¯„å›²
+	RgnHandle		newSystemClip = NewRgn();		//systemPortã®æ–°ã—ã„ã‚¯ãƒªãƒƒãƒ—é ˜åŸŸ
+	RgnHandle		dragRgn = NewRgn();				//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®æ ã®é ˜åŸŸ
+	long			afterDragArea = 0;
+	WindowPtr	floatWindow = mtGetFirstFloatWindow();
+
+
+	InsetRect( &moveArea, 4, 4 );		//moveAreaã®ç¸¦ãƒ»æ¨ªã®å€¤ã‚’4ãƒ”ã‚¯ã‚»ãƒ«ãšã¤ç¸®ã‚ã‚‹
+
+	GetWMgrPort( &systemPort );		//ã‚·ã‚¹ãƒ†ãƒ ãƒãƒ¼ãƒˆã‚’å–ã‚Šå‡ºã™
+	SetPort( systemPort );			//ã‚·ã‚¹ãƒ†ãƒ ãƒãƒ¼ãƒˆã‚’ã‚«ãƒ¬ãƒ³ãƒˆãƒãƒ¼ãƒˆã«è¨­å®š
+	GetClip( saveSystemClip );		//ã‚·ã‚¹ãƒ†ãƒ ãƒãƒ¼ãƒˆã®ã‚¯ãƒªãƒƒãƒ—é ˜åŸŸã‚’å–ã‚Šå‡ºã—ã¦ä¿å­˜
+	
+	
+	//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®æ ã®é ˜åŸŸã‚’å¾—ã‚‹
+	GetWindowStructureRgn( window, dragRgn );
+	CopyRgn( GetGrayRgn(), newSystemClip );
+	
+	/**************************************************************/
+	//ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®æ ã®éƒ¨åˆ†ã‚’å¼•ã
+	if( floatWindow != nil )
+	{
+		do
+		{
+			if( MacIsWindowVisible( floatWindow ) )
+			{
+				DiffRgn( newSystemClip, mtShowWindowStrucRgn( floatWindow ), newSystemClip );
+			}
+
+		}while( nil != ( floatWindow = mtGetNextFloatWindow( floatWindow )));
+	}
+	
+	/**************************************************************/
+
+	SetClip( newSystemClip );		//ã‚¯ãƒªãƒƒãƒ”ãƒ³ã‚°ã™ã‚‹
+	DisposeRgn( newSystemClip );		//ã‚‚ã†ã„ã‚‰ãªã„ã®ã§ç ´æ£„
+	
+
+	//ãƒ‰ãƒ©ãƒƒã‚°ä¸­ã‚’ç¤ºã™ç‚¹ç·šã‚’è¡¨ç¤º
+	afterDragArea = DragGrayRgn( dragRgn, mouse, &moveArea, &moveArea, noConstraint, 0 );
+
+	SetClip( saveSystemClip );		//ã‚¯ãƒªãƒƒãƒ—é ˜åŸŸã‚’å…ƒã«æˆ»ã™
+	DisposeRgn( saveSystemClip );		//ã‚‚ã†ã„ã‚‰ãªã„ã®ã§ç ´æ£„
+
+	//ãƒã‚¦ã‚¹ãŒæŒ‡å®šã—ãŸé ˜åŸŸãƒ»moveAreaãƒ»ã‹ã‚‰ã¯ã¿å‡ºã¦ã„ãªã‘ã‚Œã°
+	if( afterDragArea != kMouseUpOutOfSlop )	
+	{
+		Rect		contentRect;
+
+		//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ContentRgnå¾—ãŸå¾Œã«contentRectã«ä»£å…¥
+		GetWindowRegion( window, kWindowContentRgn, dragRgn );
+		contentRect = (*dragRgn)->rgnBBox;
+
+		mouse.v = HiWord(afterDragArea);
+		mouse.h = LoWord(afterDragArea);
+
+		mouse.v += contentRect.top;
+		mouse.h += contentRect.left;
+
+		MoveWindow( window, mouse.h, mouse.v, false );
+	}
+	DisposeRgn( dragRgn );
+
+	SetPort( floatWindow );
+}
+//æ¨™æº–ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®äº¤æ›¿
+void priChangeDocWindow( WindowPtr theWindow )
+{
+	if( theWindow != nil )
+	{
+		if( IsWindowHilited( theWindow ) == false )
+		{
+			HiliteWindow( theWindow, true );		//ã‚¢ã‚¯ãƒ†ã‚£ãƒ–è¡¨ç¤ºã«ã™ã‚‹
+		}
+		
+		WindowPtr	activeWindow = mtGetActiveDocWindow();
+		
+		if( activeWindow != nil )
+		{
+			if( theWindow != activeWindow )
+			{
+				HiliteWindow( activeWindow, false );	//ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã ã£ãŸã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ãƒã‚¤ãƒ©ã‚¤ãƒˆã‚’æ¶ˆã™
+				
+				BringToFront( theWindow );			//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’å‰ã«æŒã£ã¦ãã‚‹
+				mtActivateDeactivateCtrl( theWindow, true );	//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã‚’ã‚¢ã‚¯ãƒ†ã‚£ãƒ–è¡¨ç¤ºã«
+				priBringFWindow();
+				
+				mtActivateDeactivateCtrl( activeWindow, false );	//ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã ã£ãŸã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã‚’ãƒ‡ã‚£ã‚¢ã‚¯ãƒ†ã‚£ãƒ–è¡¨ç¤ºã«
+			}
+		}
+	}
+}
+
+/**********************ã‚¢ã‚¤ã‚³ãƒ³ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ã‚¯ãƒªãƒƒã‚¯â‡©************************/
+
+/********************ãƒ•ãƒ­ãƒ¼ãƒ†ã‚£ãƒ³ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¤ãƒ™ãƒ³ãƒˆå‡¦ç†â‡§********************/
